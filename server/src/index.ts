@@ -34,7 +34,7 @@ app.get('/api/health', (req, res) => {
 });
 
 // Serve static files from React build (in production)
-const clientBuildPath = path.join(__dirname, '../../dist');
+const clientBuildPath = path.join(__dirname, '../public');
 app.use(express.static(clientBuildPath));
 
 // Serve React app for all other routes (SPA fallback)
