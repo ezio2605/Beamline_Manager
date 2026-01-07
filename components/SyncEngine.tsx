@@ -202,9 +202,14 @@ const SyncEngine: React.FC = () => {
 
       // Clear uploaded files
       setUploadedFiles([]);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Comparison failed:', error);
-      alert(`Comparison failed: ${error}`);
+      console.error('Error details:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status
+      });
+      alert(`Comparison failed: ${error.response?.data?.error || error.message || 'Unknown error'}`);
     } finally {
       setIsAnalyzing(false);
     }
@@ -314,9 +319,10 @@ const SyncEngine: React.FC = () => {
           </div>
           <div className="flex items-center gap-3">
             <button
+              type="button"
               onClick={indexJasriFiles}
-              disabled={isIndexing || !vectorStoreStatus.isInitialized}
-              className={`px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 ${isIndexing || !vectorStoreStatus.isInitialized
+              disabled={isIndexing}
+              className={`px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 transition-all ${isIndexing
                 ? 'bg-slate-300 text-slate-500 cursor-not-allowed'
                 : 'bg-purple-600 text-white hover:bg-purple-700 shadow-lg shadow-purple-200'
                 }`}
@@ -373,6 +379,7 @@ const SyncEngine: React.FC = () => {
             </div>
 
             <button
+              type="button"
               onClick={startComparison}
               disabled={uploadedFiles.length === 0 || isAnalyzing}
               className={`px-6 py-2 rounded-xl text-sm font-bold flex items-center gap-2 shadow-lg transition-all ${uploadedFiles.length === 0 || isAnalyzing
