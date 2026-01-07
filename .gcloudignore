@@ -1,0 +1,21 @@
+# Ignore everything by default
+*
+
+# Include only necessary files
+!package*.json
+!tsconfig.json
+!vite.config.ts
+!index.html
+!Dockerfile
+!.dockerignore
+
+# Include source directories
+!components/
+!services/
+!src/
+!server/
+!config/
+!types.ts
+!App.tsx
+!index.tsx
+!mockData.ts
