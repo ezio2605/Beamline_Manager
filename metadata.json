@@ -1,0 +1,8 @@
+{
+  "name": "Beamline Manual Management System",
+  "description": "A sophisticated operations platform for visualizing beamline document hierarchies, auditing manual structures, and synchronizing technical documentation between JASRI and Nichigagi using Gemini AI.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
