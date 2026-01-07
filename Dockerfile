@@ -17,6 +17,7 @@ RUN npm ci
 # Copy frontend source code
 COPY components ./components
 COPY services ./services
+COPY src ./src
 COPY types.ts ./
 COPY App.tsx ./
 COPY index.tsx ./
