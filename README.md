@@ -24,9 +24,9 @@ A cloud-native application for managing and comparing JASRI beamline operation m
 ### Prerequisites
 
 - Node.js 20+
-- Google Cloud account
+- Google Cloud account with billing enabled
 - GitHub account
-- Gemini API key
+- Vertex AI API enabled in Google Cloud
 
 ### Local Development
 
@@ -63,6 +63,7 @@ See [DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md) for complete step-by-step instr
 
 ## 📚 Documentation
 
+- [Vertex AI Migration Guide](./VERTEX_AI_MIGRATION.md) - **NEW!** Migration from Google AI Studio to Vertex AI
 - [Deployment Guide](./DEPLOYMENT_GUIDE.md) - Complete deployment walkthrough
 - [Implementation Plan](./implementation_plan.md) - Technical architecture details
 
@@ -70,15 +71,26 @@ See [DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md) for complete step-by-step instr
 
 Required environment variables:
 
-```
+```env
+# Google Cloud Configuration
 GCP_PROJECT_ID=your-project-id
-GCP_REGION=us-central1
-JASRI_BUCKET_NAME=jasri-knowledge-base
-NICHI_BUCKET_NAME=nichi-uploads
-GEMINI_API_KEY=your-gemini-api-key
-NODE_ENV=production
-PORT=8080
+GCP_LOCATION=us-central1
+
+# Google Cloud Authentication (Local Development Only)
+GOOGLE_APPLICATION_CREDENTIALS=./service-account-key.json
+
+# Google Cloud Storage
+GCS_BUCKET_NAME=your-bucket-name
+
+# Firestore
+FIRESTORE_DATABASE_ID=(default)
+
+# Server Configuration
+PORT=3001
+NODE_ENV=development
 ```
+
+See [VERTEX_AI_MIGRATION.md](./VERTEX_AI_MIGRATION.md) for detailed setup instructions.
 
 ## 📦 Project Structure
 
@@ -112,7 +124,7 @@ PORT=8080
 - TypeScript
 - Google Cloud Storage
 - Firestore
-- Gemini API
+- **Vertex AI (Gemini API)**
 
 ## 📝 License
 

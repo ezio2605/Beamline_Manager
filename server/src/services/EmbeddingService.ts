@@ -1,6 +1,10 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { VertexAI } from '@google-cloud/vertexai';
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
+// Initialize Vertex AI with Google Cloud project
+const vertexAI = new VertexAI({
+    project: process.env.GCP_PROJECT_ID || '',
+    location: process.env.GCP_LOCATION || 'us-central1',
+});
 
 export class EmbeddingService {
     /**
@@ -8,7 +12,7 @@ export class EmbeddingService {
      */
     static async generateEmbedding(text: string): Promise<number[]> {
         try {
-            const model = genAI.getGenerativeModel({ model: 'text-embedding-004' });
+            const model = vertexAI.getGenerativeModel({ model: 'text-embedding-004' });
 
             const result = await model.embedContent(text);
             return result.embedding.values;

@@ -31,3 +31,12 @@ server/node_modules
 .env
 .env.local
 .env.*.local
+
+# Google Cloud credentials
+service-account-key.json
+**/service-account-key.json
+*.json
+!package.json
+!package-lock.json
+!tsconfig.json
+!vite.config.json
