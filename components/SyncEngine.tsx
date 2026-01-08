@@ -20,8 +20,15 @@ const SyncEngine: React.FC<SyncEngineProps> = ({ onActiveWorkChange }) => {
   const [selectedBeamlineId, setSelectedBeamlineId] = useState<string>('BL01');
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [comparisonResults, setComparisonResults] = useState<ComparisonResult[]>([]);
-  const [activeResult, setActiveResult] = useState<ComparisonResult | null>(null);
+
+  // Store comparison results per beamline
+  const [comparisonResultsByBeamline, setComparisonResultsByBeamline] = useState<Record<string, ComparisonResult[]>>({});
+  const [activeResultByBeamline, setActiveResultByBeamline] = useState<Record<string, ComparisonResult | null>>({});
+
+  // Get current beamline's results
+  const comparisonResults = comparisonResultsByBeamline[selectedBeamlineId] || [];
+  const activeResult = activeResultByBeamline[selectedBeamlineId] || null;
+
   const [searchQuery, setSearchQuery] = useState('');
 
   // RAG-specific state
@@ -192,7 +199,8 @@ const SyncEngine: React.FC<SyncEngineProps> = ({ onActiveWorkChange }) => {
     if (uploadedFiles.length === 0) return;
 
     setIsAnalyzing(true);
-    setComparisonResults([]);
+    // Clear results for current beamline only
+    setComparisonResultsByBeamline(prev => ({ ...prev, [selectedBeamlineId]: [] }));
 
     try {
       // First, upload the Nichi files
@@ -225,9 +233,10 @@ const SyncEngine: React.FC<SyncEngineProps> = ({ onActiveWorkChange }) => {
         resultPath: '',
       }));
 
-      setComparisonResults(results);
+      // Store results for this beamline
+      setComparisonResultsByBeamline(prev => ({ ...prev, [selectedBeamlineId]: results }));
       if (results.length > 0) {
-        setActiveResult(results[0]);
+        setActiveResultByBeamline(prev => ({ ...prev, [selectedBeamlineId]: results[0] }));
       }
 
       // Clear uploaded files
@@ -289,8 +298,7 @@ const SyncEngine: React.FC<SyncEngineProps> = ({ onActiveWorkChange }) => {
               key={bl}
               onClick={() => {
                 setSelectedBeamlineId(bl);
-                setActiveResult(null);
-                setComparisonResults([]);
+                // Don't clear results - they persist per beamline
               }}
               className={`w-full text-left px-4 py-3 rounded-lg flex items-center justify-between transition-all ${selectedBeamlineId === bl
                 ? 'bg-indigo-600 text-white shadow-lg'
@@ -552,7 +560,7 @@ const SyncEngine: React.FC<SyncEngineProps> = ({ onActiveWorkChange }) => {
                     {comparisonResults.map((result, index) => (
                       <button
                         key={result.id}
-                        onClick={() => setActiveResult(result)}
+                        onClick={() => setActiveResultByBeamline(prev => ({ ...prev, [selectedBeamlineId]: result }))}
                         className={`w-full text-left px-4 py-3 rounded-lg flex items-center justify-between transition-all ${activeResult.id === result.id
                           ? 'bg-indigo-100 border-2 border-indigo-300'
                           : 'bg-slate-50 hover:bg-slate-100'
