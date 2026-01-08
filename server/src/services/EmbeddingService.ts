@@ -12,12 +12,31 @@ export class EmbeddingService {
      */
     static async generateEmbedding(text: string): Promise<number[]> {
         try {
-            const model = vertexAI.getGenerativeModel({ model: 'text-embedding-004' });
-
-            const result = await model.embedContent({
-                content: [{ role: 'user', parts: [{ text }] }]
+            // Use text-embedding model
+            const model = vertexAI.preview.getGenerativeModel({
+                model: 'text-embedding-004',
             });
-            return result.embedding?.values || [];
+
+            const request = {
+                contents: [{ role: 'user', parts: [{ text }] }],
+            };
+
+            const result = await model.generateContent(request);
+
+            // For embedding models, the response contains the embedding
+            const embedding = result.response.candidates?.[0]?.content?.parts?.[0]?.text;
+
+            if (embedding) {
+                // Parse the embedding if it's returned as a string
+                try {
+                    const parsed = JSON.parse(embedding);
+                    return parsed.values || parsed || [];
+                } catch {
+                    return [];
+                }
+            }
+
+            return [];
         } catch (error) {
             console.error('Error generating embedding:', error);
             throw new Error('Failed to generate embedding');
