@@ -37,9 +37,28 @@ export class ComparisonService {
             // Get JASRI content if exact match exists
             let jasriContent = '';
             if (jasriFile) {
-                // In a real scenario, we'd fetch the content from storage
-                // For now, we'll use a placeholder
-                jasriContent = `Content of ${jasriFile.filename}`;
+                try {
+                    // Download JASRI file from Cloud Storage
+                    const pathParts = jasriFile.storagePath.replace('gs://', '').split('/');
+                    const bucketName = pathParts[0];
+                    const filePath = pathParts.slice(1).join('/');
+
+                    const { CloudStorageService } = await import('./CloudStorageService.js');
+                    const buffer = await CloudStorageService.downloadFile(bucketName, filePath);
+
+                    // Process file to extract text
+                    const { FileProcessorService } = await import('./FileProcessorService.js');
+                    const processedDoc = await FileProcessorService.processFile(
+                        buffer,
+                        jasriFile.filename,
+                        jasriFile.mimeType
+                    );
+
+                    jasriContent = processedDoc.content;
+                } catch (error) {
+                    console.error('Error loading JASRI file content:', error);
+                    jasriContent = `[Error loading JASRI file: ${jasriFile.filename}]`;
+                }
             }
 
             // Build AI prompt
