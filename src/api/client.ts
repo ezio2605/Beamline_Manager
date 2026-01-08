@@ -17,7 +17,14 @@ const apiClient: AxiosInstance = axios.create({
 // Request interceptor
 apiClient.interceptors.request.use(
     (config) => {
-        // Add any auth tokens here if needed
+        const isFormData = config.data instanceof FormData;
+        if (isFormData) {
+            // Remove any Content-Type so axios/browser can set multipart/form-data with the boundary
+            if (config.headers) {
+                delete (config.headers as any)['Content-Type'];
+                delete (config.headers as any)['content-type'];
+            }
+        }
         return config;
     },
     (error) => {
