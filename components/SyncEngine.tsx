@@ -78,8 +78,11 @@ const SyncEngine: React.FC<SyncEngineProps> = ({ onActiveWorkChange }) => {
   // Add confirmation dialog when user tries to refresh the page
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      // Show confirmation dialog if there are uploaded files or comparison results
-      if (uploadedFiles.length > 0 || comparisonResults.length > 0 || isAnalyzing) {
+      // Show confirmation dialog if there are uploaded files or comparison results in ANY beamline
+      const hasAnyResults = Object.values(comparisonResultsByBeamline).some(
+        (results): results is ComparisonResult[] => Array.isArray(results) && results.length > 0
+      );
+      if (uploadedFiles.length > 0 || hasAnyResults || isAnalyzing) {
         e.preventDefault();
         // Modern browsers require returnValue to be set
         e.returnValue = 'Are you sure you want to leave? All progress will be lost and you will need to start over.';
@@ -93,13 +96,17 @@ const SyncEngine: React.FC<SyncEngineProps> = ({ onActiveWorkChange }) => {
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
-  }, [uploadedFiles, comparisonResults, isAnalyzing]);
+  }, [uploadedFiles, comparisonResultsByBeamline, isAnalyzing]);
 
   // Notify parent component when active work status changes
   useEffect(() => {
-    const hasActiveWork = uploadedFiles.length > 0 || comparisonResults.length > 0 || isAnalyzing;
+    // Check if ANY beamline has active work (uploaded files, results, or analyzing)
+    const hasAnyResults = Object.values(comparisonResultsByBeamline).some(
+      (results): results is ComparisonResult[] => Array.isArray(results) && results.length > 0
+    );
+    const hasActiveWork = uploadedFiles.length > 0 || hasAnyResults || isAnalyzing;
     onActiveWorkChange?.(hasActiveWork);
-  }, [uploadedFiles, comparisonResults, isAnalyzing, onActiveWorkChange]);
+  }, [uploadedFiles, comparisonResultsByBeamline, isAnalyzing, onActiveWorkChange]);
 
   // Handle JASRI file upload
   const handleJasriFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
