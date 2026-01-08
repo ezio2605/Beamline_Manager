@@ -14,8 +14,10 @@ export class EmbeddingService {
         try {
             const model = vertexAI.getGenerativeModel({ model: 'text-embedding-004' });
 
-            const result = await model.embedContent(text);
-            return result.embedding.values;
+            const result = await model.embedContent({
+                content: [{ role: 'user', parts: [{ text }] }]
+            });
+            return result.embedding?.values || [];
         } catch (error) {
             console.error('Error generating embedding:', error);
             throw new Error('Failed to generate embedding');

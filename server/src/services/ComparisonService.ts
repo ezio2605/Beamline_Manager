@@ -55,7 +55,7 @@ export class ComparisonService {
             // Call Gemini API via Vertex AI
             const model = vertexAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
             const result = await model.generateContent(prompt);
-            const response = result.response.text();
+            const response = result.response.candidates?.[0]?.content?.parts?.[0]?.text || '';
 
             // Parse AI response
             const comparisonCase = this.determineCase(response, jasriFile, similarDocs);
