@@ -71,9 +71,7 @@ export class ApiClient {
         formData.append('beamlineId', beamlineId);
         files.forEach(file => formData.append('files', file));
 
-        const response = await apiClient.post('/files/upload/jasri', formData, {
-            headers: { 'Content-Type': 'multipart/form-data' },
-        });
+        const response = await apiClient.post('/files/upload/jasri', formData);
 
         return response.data.files;
     }
@@ -86,9 +84,7 @@ export class ApiClient {
         formData.append('beamlineId', beamlineId);
         files.forEach(file => formData.append('files', file));
 
-        const response = await apiClient.post('/files/upload/nichi', formData, {
-            headers: { 'Content-Type': 'multipart/form-data' },
-        });
+        const response = await apiClient.post('/files/upload/nichi', formData);
 
         return response.data.files;
     }
