@@ -5,6 +5,8 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import filesRouter from './routes/files.js';
 import comparisonRouter from './routes/comparison.js';
+import { CloudStorageService } from './services/CloudStorageService.js';
+import { FirestoreService } from './services/FirestoreService.js';
 
 // Load environment variables
 dotenv.config();
@@ -29,7 +31,11 @@ app.get('/api/health', (req, res) => {
     res.json({
         status: 'healthy',
         timestamp: new Date().toISOString(),
-        environment: process.env.NODE_ENV || 'development'
+        environment: process.env.NODE_ENV || 'development',
+        config: {
+            projectId: process.env.GCP_PROJECT_ID || 'NOT_SET',
+            region: process.env.GCP_LOCATION || process.env.GCP_REGION || 'us-central1',
+        }
     });
 });
 
@@ -51,9 +57,39 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
     });
 });
 
-// Start server
-app.listen(PORT, () => {
-    console.log(`🚀 Server running on port ${PORT}`);
-    console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
-    console.log(`🔥 API available at http://localhost:${PORT}/api`);
-});
+// Initialize GCP services and start server
+async function startServer() {
+    try {
+        console.log('🔧 Initializing GCP services...');
+
+        // Validate environment variables
+        if (!process.env.GCP_PROJECT_ID) {
+            console.warn('⚠️  GCP_PROJECT_ID not set - GCP services may fail');
+        }
+
+        // Initialize Cloud Storage (creates buckets if needed)
+        await CloudStorageService.initialize();
+
+        // Initialize Firestore
+        await FirestoreService.initialize();
+
+        console.log('✅ GCP services initialized successfully');
+
+    } catch (error: any) {
+        console.error('❌ GCP initialization error:', error.message);
+        console.error('💡 Check:');
+        console.error('   - GCP_PROJECT_ID environment variable is set');
+        console.error('   - Service account has Storage Admin, Datastore User, Vertex AI User roles');
+        console.error('   - Buckets exist or service account can create them');
+        console.warn('⚠️  Server will start but GCP features may not work');
+    }
+
+    // Start Express server
+    app.listen(PORT, () => {
+        console.log(`🚀 Server running on port ${PORT}`);
+        console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
+        console.log(`🔥 API available at http://localhost:${PORT}/api`);
+    });
+}
+
+startServer();
