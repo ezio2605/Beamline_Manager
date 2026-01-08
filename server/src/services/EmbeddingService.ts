@@ -49,8 +49,8 @@ export class EmbeddingService {
     static async generateEmbeddings(texts: string[]): Promise<number[][]> {
         const embeddings: number[][] = [];
 
-        // Process in batches to avoid rate limits
-        const batchSize = 5;
+        // Process one at a time with delays to respect 60 req/min quota (1 req per second)
+        const batchSize = 1;
         for (let i = 0; i < texts.length; i += batchSize) {
             const batch = texts.slice(i, i + batchSize);
             const batchEmbeddings = await Promise.all(
@@ -58,9 +58,9 @@ export class EmbeddingService {
             );
             embeddings.push(...batchEmbeddings);
 
-            // Small delay between batches
+            // 1.2 second delay to stay within 60 req/min quota
             if (i + batchSize < texts.length) {
-                await new Promise(resolve => setTimeout(resolve, 100));
+                await new Promise(resolve => setTimeout(resolve, 1200));
             }
         }
 
