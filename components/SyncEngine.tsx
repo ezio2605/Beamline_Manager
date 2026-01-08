@@ -85,7 +85,7 @@ const SyncEngine: React.FC<SyncEngineProps> = ({ onActiveWorkChange }) => {
     // Cleanup
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
-    }; \
+    };
   }, [uploadedFiles, comparisonResults, isAnalyzing]);
 
   // Notify parent component when active work status changes
@@ -109,7 +109,7 @@ const SyncEngine: React.FC<SyncEngineProps> = ({ onActiveWorkChange }) => {
 
     try {
       // Upload files to backend
-      const uploadedFiles = await ApiClient.uploadJasriFiles(selectedBeamlineId, files);
+      const uploadedJasriFiles = await ApiClient.uploadJasriFiles(selectedBeamlineId, files);
 
       setIndexingProgress({
         current: files.length,
@@ -118,7 +118,7 @@ const SyncEngine: React.FC<SyncEngineProps> = ({ onActiveWorkChange }) => {
         status: 'completed',
       });
 
-      alert(`Successfully uploaded ${uploadedFiles.length} JASRI file(s)!`);
+      alert(`Successfully uploaded ${uploadedJasriFiles.length} JASRI file(s)!`);
       setTimeout(() => setIndexingProgress(null), 2000);
     } catch (error) {
       console.error('Upload failed:', error);
