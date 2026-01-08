@@ -61,7 +61,7 @@ const SyncEngine: React.FC = () => {
       }
     };
 
-    initRAG();
+    // initRAG(); // Disabled - all RAG handled by backend now
   }, []);
 
   // Handle JASRI file upload
