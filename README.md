@@ -1,4 +1,4 @@
-# JASRI File Management System - Cloud Edition
+# Beamline Manual Management System - Cloud Edition
 
 A cloud-native application for managing and comparing JASRI beamline operation manual files using AI-powered semantic analysis.
 

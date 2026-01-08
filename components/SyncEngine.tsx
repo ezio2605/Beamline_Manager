@@ -12,7 +12,11 @@ import type {
   RAGSimilarityResult
 } from '../types';
 
-const SyncEngine: React.FC = () => {
+interface SyncEngineProps {
+  onActiveWorkChange?: (hasActiveWork: boolean) => void;
+}
+
+const SyncEngine: React.FC<SyncEngineProps> = ({ onActiveWorkChange }) => {
   const [selectedBeamlineId, setSelectedBeamlineId] = useState<string>('BL01');
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -63,6 +67,32 @@ const SyncEngine: React.FC = () => {
 
     // initRAG(); // Disabled - all RAG handled by backend now
   }, []);
+
+  // Add confirmation dialog when user tries to refresh the page
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      // Show confirmation dialog if there are uploaded files or comparison results
+      if (uploadedFiles.length > 0 || comparisonResults.length > 0 || isAnalyzing) {
+        e.preventDefault();
+        // Modern browsers require returnValue to be set
+        e.returnValue = 'Are you sure you want to leave? All progress will be lost and you will need to start over.';
+        return e.returnValue;
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    // Cleanup
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    }; \
+  }, [uploadedFiles, comparisonResults, isAnalyzing]);
+
+  // Notify parent component when active work status changes
+  useEffect(() => {
+    const hasActiveWork = uploadedFiles.length > 0 || comparisonResults.length > 0 || isAnalyzing;
+    onActiveWorkChange?.(hasActiveWork);
+  }, [uploadedFiles, comparisonResults, isAnalyzing, onActiveWorkChange]);
 
   // Handle JASRI file upload
   const handleJasriFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {

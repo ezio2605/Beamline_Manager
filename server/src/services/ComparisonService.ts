@@ -135,10 +135,10 @@ export class ComparisonService {
      */
     private static formatRAGInsights(similarDocs: SimilarDocument[]): string {
         if (similarDocs.length === 0) {
-            return '\n\n**RAG Analysis:** No similar documents found in vector store.';
+            return '\n\n**Detailed Analysis:** No similar documents found in vector store.';
         }
 
-        let insights = '\n\n**RAG-Enhanced Analysis:**\n';
+        let insights = '\n\n**Detailed Analysis:**\n';
         insights += `- Found ${similarDocs.length} similar JASRI document(s)\n`;
         insights += `- Top match: ${(similarDocs[0].score * 100).toFixed(1)}% similarity\n`;
 

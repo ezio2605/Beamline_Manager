@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import Layout from './components/Layout';
 import Dashboard from './components/Dashboard';
 import BeamlineExplorer from './components/BeamlineExplorer';
@@ -9,24 +9,46 @@ import { ViewState } from './types';
 
 const App: React.FC = () => {
   const [activeView, setActiveView] = useState<ViewState>(ViewState.DASHBOARD);
+  const syncEngineHasActiveWorkRef = useRef<() => boolean>(() => false);
+
+  const handleViewChange = (newView: ViewState) => {
+    // If leaving Sync Machine, check if there's active work
+    if (activeView === ViewState.SYNC && newView !== ViewState.SYNC) {
+      const hasActiveWork = syncEngineHasActiveWorkRef.current();
+
+      if (hasActiveWork) {
+        const confirmed = window.confirm(
+          'Are you sure you want to leave? All progress will be lost and you will need to start over.'
+        );
+
+        if (!confirmed) {
+          return; // Don't change view
+        }
+      }
+    }
+
+    setActiveView(newView);
+  };
 
   const renderContent = () => {
     switch (activeView) {
       case ViewState.DASHBOARD:
-        return <Dashboard onNavigate={setActiveView} />;
+        return <Dashboard onNavigate={handleViewChange} />;
       case ViewState.EXPLORER:
         return <BeamlineExplorer />;
       case ViewState.AUDITOR:
         return <StructuralAuditor />;
       case ViewState.SYNC:
-        return <SyncEngine />;
+        return <SyncEngine onActiveWorkChange={(hasWork) => {
+          syncEngineHasActiveWorkRef.current = () => hasWork;
+        }} />;
       default:
-        return <Dashboard onNavigate={setActiveView} />;
+        return <Dashboard onNavigate={handleViewChange} />;
     }
   };
 
   return (
-    <Layout activeView={activeView} onViewChange={setActiveView}>
+    <Layout activeView={activeView} onViewChange={handleViewChange}>
       {renderContent()}
     </Layout>
   );
