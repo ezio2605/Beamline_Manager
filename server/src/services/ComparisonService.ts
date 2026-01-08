@@ -85,7 +85,7 @@ export class ComparisonService {
             // Create comparison result
             const comparisonResult: ComparisonResult = {
                 id: uuidv4(),
-                jasriFileId: jasriFile?.id,
+                ...(jasriFile?.id && { jasriFileId: jasriFile.id }), // Only include if exists
                 nichiFileId: nichiFile.id,
                 beamlineId: nichiFile.beamlineId,
                 case: comparisonCase,
