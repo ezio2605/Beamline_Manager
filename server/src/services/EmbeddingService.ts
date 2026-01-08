@@ -14,7 +14,7 @@ export class EmbeddingService {
         try {
             // Use text-embedding model
             const model = vertexAI.preview.getGenerativeModel({
-                model: 'text-embedding-004',
+                model: 'text-multilingual-embedding-002',
             });
 
             const request = {
