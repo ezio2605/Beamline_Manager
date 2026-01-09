@@ -17,13 +17,15 @@ type DiffLine = {
 };
 
 const DiffViewer: React.FC<DiffViewerProps> = ({ jasriContent, nichiContent, comparisonCase }) => {
+    // Check if JASRI file exists
+    const hasJasriFile = jasriContent && jasriContent !== 'No JASRI file found';
+
     const diffLines = useMemo(() => {
-        // Split content into lines
-        const jasriLines = jasriContent.split('\n');
-        const nichiLines = nichiContent.split('\n');
+        // If no JASRI file, treat as empty content for diff
+        const jasriText = hasJasriFile ? jasriContent : '';
 
         // Generate diff
-        const diff = Diff.diffLines(jasriContent, nichiContent);
+        const diff = Diff.diffLines(jasriText, nichiContent);
 
         const result: { jasri: DiffLine[]; nichi: DiffLine[] } = {
             jasri: [],
@@ -88,7 +90,7 @@ const DiffViewer: React.FC<DiffViewerProps> = ({ jasriContent, nichiContent, com
         });
 
         return result;
-    }, [jasriContent, nichiContent]);
+    }, [jasriContent, nichiContent, hasJasriFile]);
 
     const getLineStyle = (type: DiffLine['type'], isJasri: boolean) => {
         switch (type) {
@@ -124,7 +126,7 @@ const DiffViewer: React.FC<DiffViewerProps> = ({ jasriContent, nichiContent, com
                 <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest px-2 flex items-center gap-2">
                     <i className="fa-solid fa-file-lines"></i>
                     JASRI Content
-                    {jasriContent === 'No JASRI file found' && (
+                    {!hasJasriFile && (
                         <span className="text-[10px] bg-slate-200 text-slate-600 px-2 py-0.5 rounded normal-case">
                             No file
                         </span>
@@ -132,11 +134,12 @@ const DiffViewer: React.FC<DiffViewerProps> = ({ jasriContent, nichiContent, com
                 </h4>
                 <div className="bg-slate-50 rounded-2xl border-2 border-slate-200 overflow-hidden">
                     <div className="h-96 overflow-auto">
-                        {jasriContent === 'No JASRI file found' ? (
+                        {!hasJasriFile ? (
                             <div className="flex items-center justify-center h-full text-slate-400 text-sm">
                                 <div className="text-center">
                                     <i className="fa-solid fa-file-circle-xmark text-4xl mb-2"></i>
                                     <p>No JASRI file found</p>
+                                    <p className="text-xs mt-1">All Nichi content is new</p>
                                 </div>
                             </div>
                         ) : (
@@ -167,13 +170,13 @@ const DiffViewer: React.FC<DiffViewerProps> = ({ jasriContent, nichiContent, com
             <div className="space-y-2">
                 <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest px-2 flex items-center gap-2">
                     <i className="fa-solid fa-file-lines"></i>
-                    Nichi Content (日技)
+                    日技 Content
                     <span
                         className={`text-[10px] px-2 py-0.5 rounded normal-case font-bold ${comparisonCase === 'case1'
-                                ? 'bg-amber-100 text-amber-700'
-                                : comparisonCase === 'case2'
-                                    ? 'bg-emerald-100 text-emerald-700'
-                                    : 'bg-indigo-100 text-indigo-700'
+                            ? 'bg-amber-100 text-amber-700'
+                            : comparisonCase === 'case2'
+                                ? 'bg-emerald-100 text-emerald-700'
+                                : 'bg-indigo-100 text-indigo-700'
                             }`}
                     >
                         {comparisonCase === 'case1' ? 'UPDATE' : comparisonCase === 'case2' ? 'MATCH' : 'NEW'}

@@ -555,9 +555,9 @@ const SyncEngine: React.FC<SyncEngineProps> = ({ onActiveWorkChange }) => {
                         {activeResult.case === 'case1' ? 'UPDATE' :
                           activeResult.case === 'case2' ? 'MATCH' : 'NEW'}
                       </h3>
-                      <span className="px-2 py-0.5 bg-purple-100 text-purple-600 rounded text-[10px] font-bold uppercase tracking-wider">
+                      {/* <span className="px-2 py-0.5 bg-purple-100 text-purple-600 rounded text-[10px] font-bold uppercase tracking-wider">
                         RAG-Enhanced
-                      </span>
+                      </span> */}
                     </div>
                     <p className="text-sm text-slate-600 mb-4">{activeResult.actionTaken}</p>
                     <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 text-xs text-slate-700">
