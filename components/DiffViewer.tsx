@@ -20,9 +20,20 @@ const DiffViewer: React.FC<DiffViewerProps> = ({ jasriContent, nichiContent, com
     // Check if JASRI file exists
     const hasJasriFile = jasriContent && jasriContent !== 'No JASRI file found';
 
+    console.log('DiffViewer received:', {
+        comparisonCase,
+        hasJasriFile,
+        jasriContentLength: jasriContent?.length || 0,
+        nichiContentLength: nichiContent?.length || 0,
+        jasriPreview: jasriContent?.substring(0, 100) || 'empty',
+        nichiPreview: nichiContent?.substring(0, 100) || 'empty'
+    });
+
     const diffLines = useMemo(() => {
         // If no JASRI file, treat as empty content for diff
         const jasriText = hasJasriFile ? jasriContent : '';
+
+        console.log('Calculating diff with jasriText length:', jasriText.length, 'nichiContent length:', nichiContent.length);
 
         // Generate diff
         const diff = Diff.diffLines(jasriText, nichiContent);

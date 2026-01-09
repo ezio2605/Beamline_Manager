@@ -20,7 +20,7 @@ export class ComparisonService {
         try {
             // Find matching JASRI file by name
             const jasriFiles = await FirestoreService.getJasriFiles(nichiFile.beamlineId);
-            const jasriFile = jasriFiles.find(
+            let jasriFile = jasriFiles.find(
                 f => f.filename.toLowerCase() === nichiFile.filename.toLowerCase()
             );
 
@@ -30,6 +30,18 @@ export class ComparisonService {
                 nichiFile.beamlineId,
                 3
             );
+
+            // If no exact filename match but RAG found similar documents, use the most similar one
+            if (!jasriFile && similarDocs.length > 0) {
+                const mostSimilarDocId = similarDocs[0].document.fileId;
+                jasriFile = jasriFiles.find(f => f.id === mostSimilarDocId);
+                console.log('No exact filename match, using most similar RAG document:', {
+                    similarity: similarDocs[0].score,
+                    fileId: mostSimilarDocId,
+                    filename: jasriFile?.filename,
+                    found: !!jasriFile
+                });
+            }
 
             // Build RAG context
             const ragContext = this.buildRAGContext(similarDocs);

@@ -224,25 +224,37 @@ const SyncEngine: React.FC<SyncEngineProps> = ({ onActiveWorkChange }) => {
       // Convert API results to component format and fetch file contents
       const results: ComparisonResult[] = await Promise.all(
         comparisonData.results.map(async (r) => {
+          console.log('Processing comparison result:', {
+            case: r.case,
+            jasriFileId: r.jasriFileId,
+            nichiFileId: r.nichiFileId,
+            hasJasriFile: !!r.jasriFileId
+          });
+
           // Fetch JASRI content if available
           let jasriContent = '';
           if (r.jasriFileId) {
             try {
+              console.log('Fetching JASRI content for file ID:', r.jasriFileId);
               const jasriData = await ApiClient.getFileContent(r.jasriFileId);
               jasriContent = jasriData.content;
+              console.log('JASRI content fetched, length:', jasriContent.length);
             } catch (error) {
               console.error('Error fetching JASRI content:', error);
               jasriContent = 'Error loading JASRI file content';
             }
           } else {
+            console.log('No JASRI file ID, setting to "No JASRI file found"');
             jasriContent = 'No JASRI file found';
           }
 
           // Fetch Nichi content
           let nichiContent = '';
           try {
+            console.log('Fetching Nichi content for file ID:', r.nichiFileId);
             const nichiData = await ApiClient.getFileContent(r.nichiFileId);
             nichiContent = nichiData.content;
+            console.log('Nichi content fetched, length:', nichiContent.length);
           } catch (error) {
             console.error('Error fetching Nichi content:', error);
             nichiContent = 'Error loading Nichi file content';
