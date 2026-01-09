@@ -21,31 +21,49 @@ export class VectorSearchService {
     ): Promise<void> {
         // Chunk the document
         const chunks = FileProcessorService.chunkText(content);
+        console.log(`📄 Chunked document into ${chunks.length} pieces`);
 
         // Generate embeddings for each chunk
         const embeddings = await EmbeddingService.generateEmbeddings(chunks);
 
-        // Save each chunk as a vector document
-        const vectorDocs: VectorDocument[] = chunks.map((chunk, index) => ({
-            id: `${fileId}_chunk_${index}`,
-            fileId,
-            beamlineId,
-            content: chunk,
-            embedding: embeddings[index],
-            chunkIndex: index,
-            metadata: {
-                ...metadata,
-                totalChunks: chunks.length,
-            },
-            createdAt: new Date().toISOString(),
-        }));
+        // Filter out chunks with failed embeddings (empty arrays)
+        const validVectorDocs: VectorDocument[] = [];
+        const skippedChunks: number[] = [];
 
-        // Save all vector documents
-        for (const vectorDoc of vectorDocs) {
+        chunks.forEach((chunk, index) => {
+            const embedding = embeddings[index];
+
+            // Check if embedding is valid (not empty)
+            if (embedding && embedding.length > 0) {
+                validVectorDocs.push({
+                    id: `${fileId}_chunk_${index}`,
+                    fileId,
+                    beamlineId,
+                    content: chunk,
+                    embedding: embedding,
+                    chunkIndex: index,
+                    metadata: {
+                        ...metadata,
+                        totalChunks: chunks.length,
+                    },
+                    createdAt: new Date().toISOString(),
+                });
+            } else {
+                skippedChunks.push(index);
+                console.warn(`⚠️  Skipping chunk ${index + 1} - no valid embedding generated`);
+            }
+        });
+
+        // Save all valid vector documents
+        for (const vectorDoc of validVectorDocs) {
             await FirestoreService.saveVectorDocument(vectorDoc);
         }
 
-        console.log(`✅ Indexed ${chunks.length} chunks for file ${fileId}`);
+        // Log results
+        if (skippedChunks.length > 0) {
+            console.warn(`⚠️  Skipped ${skippedChunks.length} chunk(s) due to embedding failures: ${skippedChunks.map(i => i + 1).join(', ')}`);
+        }
+        console.log(`✅ Successfully indexed ${validVectorDocs.length}/${chunks.length} chunks for file ${fileId}`);
     }
 
     /**

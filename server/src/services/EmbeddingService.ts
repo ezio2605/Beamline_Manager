@@ -10,60 +10,75 @@ const vertexAI = new VertexAI({
 
 export class EmbeddingService {
     /**
-     * Generate embedding for a text using Vertex AI
+     * Generate embedding for a text using Vertex AI with retry logic
      */
-    static async generateEmbedding(text: string): Promise<number[]> {
-        try {
-            const client = new PredictionServiceClient({
-                apiEndpoint: `${process.env.GCP_LOCATION || 'us-central1'}-aiplatform.googleapis.com`,
-            });
+    static async generateEmbedding(text: string, retries: number = 3): Promise<number[]> {
+        let lastError: Error | null = null;
 
-            const endpoint = `projects/${process.env.GCP_PROJECT_ID}/locations/${process.env.GCP_LOCATION || 'us-central1'}/publishers/google/models/text-embedding-004`;
+        for (let attempt = 0; attempt < retries; attempt++) {
+            try {
+                const client = new PredictionServiceClient({
+                    apiEndpoint: `${process.env.GCP_LOCATION || 'us-central1'}-aiplatform.googleapis.com`,
+                });
 
-            // Create instance with proper structure for text-embedding-004
-            const instance = {
-                structValue: {
-                    fields: {
-                        content: {
-                            stringValue: text,
+                const endpoint = `projects/${process.env.GCP_PROJECT_ID}/locations/${process.env.GCP_LOCATION || 'us-central1'}/publishers/google/models/text-embedding-004`;
+
+                // Create instance with proper structure for text-embedding-004
+                const instance = {
+                    structValue: {
+                        fields: {
+                            content: {
+                                stringValue: text,
+                            },
                         },
                     },
-                },
-            };
+                };
 
-            const instances = [instance];
-            const parameters = {
-                structValue: {
-                    fields: {},
-                },
-            };
+                const instances = [instance];
+                const parameters = {
+                    structValue: {
+                        fields: {},
+                    },
+                };
 
-            const request = {
-                endpoint,
-                instances,
-                parameters,
-            };
+                const request = {
+                    endpoint,
+                    instances,
+                    parameters,
+                };
 
-            const [response] = await client.predict(request);
-            const predictions = response.predictions;
+                const [response] = await client.predict(request);
+                const predictions = response.predictions;
 
-            if (predictions && predictions.length > 0) {
-                const prediction = predictions[0];
-                // Extract embeddings from the struct value
-                const embeddingsField = prediction.structValue?.fields?.embeddings;
-                const valuesField = embeddingsField?.structValue?.fields?.values;
-                const listValue = valuesField?.listValue?.values;
+                if (predictions && predictions.length > 0) {
+                    const prediction = predictions[0];
+                    // Extract embeddings from the struct value
+                    const embeddingsField = prediction.structValue?.fields?.embeddings;
+                    const valuesField = embeddingsField?.structValue?.fields?.values;
+                    const listValue = valuesField?.listValue?.values;
 
-                if (listValue) {
-                    return listValue.map((v: any) => v.numberValue || 0);
+                    if (listValue) {
+                        return listValue.map((v: any) => v.numberValue || 0);
+                    }
+                }
+
+                throw new Error('No embedding returned from Vertex AI');
+            } catch (error) {
+                lastError = error as Error;
+                console.error(`⚠️  Error generating embedding (attempt ${attempt + 1}/${retries}):`, error);
+
+                // If not the last attempt, wait before retrying (exponential backoff)
+                if (attempt < retries - 1) {
+                    const delay = Math.pow(2, attempt) * 1000; // 1s, 2s, 4s
+                    console.log(`   Retrying in ${delay}ms...`);
+                    await new Promise(resolve => setTimeout(resolve, delay));
                 }
             }
-
-            throw new Error('No embedding returned from Vertex AI');
-        } catch (error) {
-            console.error('Error generating embedding:', error);
-            throw new Error('Failed to generate embedding');
         }
+
+        // All retries failed
+        console.error('❌ Failed to generate embedding after all retries');
+        throw lastError || new Error('Failed to generate embedding');
     }
 
     /**
@@ -71,6 +86,7 @@ export class EmbeddingService {
      */
     static async generateEmbeddings(texts: string[]): Promise<number[][]> {
         const embeddings: number[][] = [];
+        const failedIndices: number[] = [];
 
         // Vertex AI text-embedding supports batch requests
         // Process in smaller batches for reliability (5 texts per request recommended)
@@ -127,15 +143,19 @@ export class EmbeddingService {
                     throw new Error('No embeddings returned from batch request');
                 }
             } catch (error) {
-                console.error(`Error generating embeddings for batch ${i}:`, error);
-                // Fallback to individual requests if batch fails
-                for (const text of batch) {
+                console.error(`⚠️  Batch embedding failed for chunks ${i}-${i + batch.length - 1}, falling back to individual requests`);
+                // Fallback to individual requests with retry logic
+                for (let j = 0; j < batch.length; j++) {
+                    const text = batch[j];
+                    const globalIndex = i + j;
                     try {
-                        const embedding = await this.generateEmbedding(text);
+                        console.log(`   Processing chunk ${globalIndex + 1}/${texts.length} individually...`);
+                        const embedding = await this.generateEmbedding(text); // Uses retry logic
                         embeddings.push(embedding);
                     } catch (err) {
-                        console.error('Error generating individual embedding:', err);
-                        embeddings.push([]); // Empty embedding on failure
+                        console.error(`❌ Failed to generate embedding for chunk ${globalIndex + 1} after retries:`, err);
+                        failedIndices.push(globalIndex);
+                        embeddings.push([]); // Placeholder - will be filtered out later
                     }
                 }
             }
@@ -144,6 +164,11 @@ export class EmbeddingService {
             if (i + batchSize < texts.length) {
                 await new Promise(resolve => setTimeout(resolve, 200));
             }
+        }
+
+        // Log summary
+        if (failedIndices.length > 0) {
+            console.warn(`⚠️  ${failedIndices.length} chunk(s) failed to generate embeddings: ${failedIndices.map(i => i + 1).join(', ')}`);
         }
 
         return embeddings;

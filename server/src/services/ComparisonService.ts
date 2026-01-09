@@ -147,10 +147,10 @@ export class ComparisonService {
      */
     private static formatRAGInsights(similarDocs: SimilarDocument[]): string {
         if (similarDocs.length === 0) {
-            return '\n\n**Detailed Analysis:** No similar documents found in vector store.';
+            return '\n\nDetailed Analysis: No similar documents found in vector store.';
         }
 
-        let insights = '\n\n**Detailed Analysis:**\n';
+        let insights = '\n\nDetailed Analysis:\n';
         insights += `- Found ${similarDocs.length} similar JASRI document(s)\n`;
         insights += `- Top match: ${(similarDocs[0].score * 100).toFixed(1)}% similarity\n`;
 
@@ -283,11 +283,11 @@ Be precise and technical in your analysis.`;
     private static getActionDescription(comparisonCase: 'case1' | 'case2' | 'case3'): string {
         switch (comparisonCase) {
             case 'case1':
-                return 'JASRI file updated with Nichi content (more detailed information found)';
+                return '日技 file has more details (more detailed information found)';
             case 'case2':
-                return 'Original JASRI file retained (content matches)';
+                return 'JASRI file matches 日技 file (content matches)';
             case 'case3':
-                return 'Nichi file retained as new item (not present in JASRI)';
+                return '日技 file is a new item (not present in JASRI)';
         }
     }
 

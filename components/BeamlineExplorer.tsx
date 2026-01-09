@@ -395,7 +395,7 @@ const BeamlineExplorer: React.FC = () => {
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-12 pr-6 py-3 bg-white border-2 border-slate-100 rounded-2xl shadow-lg focus:ring-4 focus:ring-indigo-500/5 transition-all outline-none text-slate-800 font-semibold text-sm"
             />
-            <i className="fa-solid fa-magnifying-glass absolute left-4 top-3.5 text-slate-300 text-lg"></i>
+            <i className="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 text-lg"></i>
           </div>
         </div>
 
