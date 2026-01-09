@@ -113,6 +113,19 @@ export class ApiClient {
     }
 
     /**
+     * Get file content by file ID
+     */
+    static async getFileContent(fileId: string): Promise<{
+        fileId: string;
+        filename: string;
+        content: string;
+        metadata: any;
+    }> {
+        const response = await apiClient.get(`/files/content/${fileId}`);
+        return response.data;
+    }
+
+    /**
      * Index JASRI files into vector store
      */
     static async indexJasriFiles(beamlineId: string): Promise<{

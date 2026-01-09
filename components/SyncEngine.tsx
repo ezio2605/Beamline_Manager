@@ -5,6 +5,7 @@ import { VectorStoreService } from '../services/VectorStoreService';
 import { DocumentProcessor } from '../services/DocumentProcessor';
 import { FileStorageService } from '../services/FileStorageService';
 import { ApiClient } from '../src/api/client';
+import DiffViewer from './DiffViewer';
 import type {
   ComparisonResult,
   IndexingProgress,
@@ -220,25 +221,53 @@ const SyncEngine: React.FC<SyncEngineProps> = ({ onActiveWorkChange }) => {
       const nichiFileIds = uploadedNichiFiles.map(f => f.id);
       const comparisonData = await ApiClient.compareFiles(selectedBeamlineId, nichiFileIds);
 
-      // Convert API results to component format
-      const results: ComparisonResult[] = comparisonData.results.map(r => ({
-        id: r.id,
-        jasriFile: r.jasriFileId ? { filename: 'JASRI file', id: r.jasriFileId } as any : null,
-        nichiFile: {
-          id: r.nichiFileId,
-          filename: uploadedFiles.find((_, i) => uploadedNichiFiles[i]?.id === r.nichiFileId)?.name || 'Nichi file',
-          beamlineId: r.beamlineId,
-        } as any,
-        beamlineId: r.beamlineId,
-        case: r.case,
-        timestamp: r.timestamp,
-        jasriContent: '',
-        nichiContent: '',
-        differences: r.differences,
-        aiInsights: r.aiInsights,
-        actionTaken: r.actionTaken,
-        resultPath: '',
-      }));
+      // Convert API results to component format and fetch file contents
+      const results: ComparisonResult[] = await Promise.all(
+        comparisonData.results.map(async (r) => {
+          // Fetch JASRI content if available
+          let jasriContent = '';
+          if (r.jasriFileId) {
+            try {
+              const jasriData = await ApiClient.getFileContent(r.jasriFileId);
+              jasriContent = jasriData.content;
+            } catch (error) {
+              console.error('Error fetching JASRI content:', error);
+              jasriContent = 'Error loading JASRI file content';
+            }
+          } else {
+            jasriContent = 'No JASRI file found';
+          }
+
+          // Fetch Nichi content
+          let nichiContent = '';
+          try {
+            const nichiData = await ApiClient.getFileContent(r.nichiFileId);
+            nichiContent = nichiData.content;
+          } catch (error) {
+            console.error('Error fetching Nichi content:', error);
+            nichiContent = 'Error loading Nichi file content';
+          }
+
+          return {
+            id: r.id,
+            jasriFile: r.jasriFileId ? { filename: 'JASRI file', id: r.jasriFileId } as any : null,
+            nichiFile: {
+              id: r.nichiFileId,
+              filename: uploadedFiles.find((_, i) => uploadedNichiFiles[i]?.id === r.nichiFileId)?.name || 'Nichi file',
+              beamlineId: r.beamlineId,
+            } as any,
+            beamlineId: r.beamlineId,
+            case: r.case,
+            timestamp: r.timestamp,
+            jasriContent,
+            nichiContent,
+            differences: r.differences,
+            aiInsights: r.aiInsights,
+            actionTaken: r.actionTaken,
+            resultPath: '',
+          };
+        })
+      );
 
       // Store results for this beamline
       setComparisonResultsByBeamline(prev => ({ ...prev, [selectedBeamlineId]: results }));
@@ -328,14 +357,14 @@ const SyncEngine: React.FC<SyncEngineProps> = ({ onActiveWorkChange }) => {
         <div className="p-4 border-t border-slate-200 bg-slate-50">
           <div className="text-xs text-slate-600 space-y-2">
             <div className="flex items-center justify-between">
-              <span>Vector Store:</span>
-              <span className={`font-bold ${vectorStoreStatus.isInitialized ? 'text-emerald-600' : 'text-slate-400'}`}>
+              <span>Last Indexed:</span>
+              {/* <span className={`font-bold ${vectorStoreStatus.isInitialized ? 'text-emerald-600' : 'text-slate-400'}`}>
                 {vectorStoreStatus.isInitialized ? '✓ Ready' : '○ Not Ready'}
-              </span>
+              </span> */}
             </div>
             {vectorStoreStatus.lastIndexed && (
               <div className="flex items-center justify-between">
-                <span>Last Indexed:</span>
+                {/* <span>Last Indexed:</span> */}
                 <span className="font-mono text-[10px]">
                   {new Date(vectorStoreStatus.lastIndexed).toLocaleTimeString()}
                 </span>
@@ -350,9 +379,9 @@ const SyncEngine: React.FC<SyncEngineProps> = ({ onActiveWorkChange }) => {
         {/* Controls Header */}
         <div className="p-6 bg-white border-b border-slate-200 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-indigo-100 rounded-xl flex items-center justify-center text-indigo-600">
+            {/* <div className="w-12 h-12 bg-indigo-100 rounded-xl flex items-center justify-center text-indigo-600">
               <i className="fa-solid fa-brain text-xl"></i>
-            </div>
+            </div> */}
             <div>
               <h2 className="text-xl font-bold text-slate-800 uppercase tracking-tight">
                 {selectedBeamlineId} Workspace
@@ -368,13 +397,13 @@ const SyncEngine: React.FC<SyncEngineProps> = ({ onActiveWorkChange }) => {
               onClick={indexJasriFiles}
               disabled={isIndexing}
               className={`px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 transition-all ${isIndexing
-                ? 'bg-slate-300 text-slate-500 cursor-not-allowed'
-                : 'bg-purple-600 text-white hover:bg-purple-700 shadow-lg shadow-purple-200'
+                ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed'
+                : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50 shadow-md'
                 }`}
             >
               {isIndexing ? (
                 <>
-                  <i className="fa-solid fa-spinner animate-spin"></i>
+                  <i className="fa-solid fa-spinner animate-spin text-slate-400"></i>
                   Indexing...
                 </>
               ) : (
@@ -396,7 +425,7 @@ const SyncEngine: React.FC<SyncEngineProps> = ({ onActiveWorkChange }) => {
               />
               <label
                 htmlFor="jasri-upload"
-                className="px-4 py-2 bg-emerald-600 text-white rounded-xl text-sm font-bold cursor-pointer hover:bg-emerald-700 flex items-center gap-2 shadow-lg shadow-emerald-200"
+                className="px-4 py-2 bg-white text-slate-700 border border-slate-200 rounded-xl text-sm font-bold cursor-pointer hover:bg-slate-50 flex items-center gap-2 shadow-md"
               >
                 <i className="fa-solid fa-file-arrow-up"></i>
                 Upload JASRI Files
@@ -414,12 +443,12 @@ const SyncEngine: React.FC<SyncEngineProps> = ({ onActiveWorkChange }) => {
               />
               <label
                 htmlFor="nichi-upload"
-                className="px-4 py-2 bg-slate-100 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 cursor-pointer hover:bg-slate-200 flex items-center gap-2"
+                className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-700 cursor-pointer hover:bg-slate-50 flex items-center gap-2 shadow-md transition-all"
               >
                 <i className="fa-solid fa-cloud-arrow-up"></i>
                 {uploadedFiles.length > 0
                   ? `${uploadedFiles.length} file(s)`
-                  : 'Upload Nichi Files'}
+                  : 'Upload 日技 Files'}
               </label>
             </div>
 
@@ -486,9 +515,9 @@ const SyncEngine: React.FC<SyncEngineProps> = ({ onActiveWorkChange }) => {
           {!activeResult && !isAnalyzing && comparisonResults.length === 0 && (
             <div className="h-full flex flex-col items-center justify-center text-slate-400 opacity-60">
               <i className="fa-solid fa-brain text-6xl mb-4 animate-pulse"></i>
-              <p className="text-lg font-medium">RAG-Enhanced Comparison Engine</p>
+              <p className="text-lg font-medium">Instructions for Comparison Engine</p>
               <p className="text-sm">1. Index JASRI files into vector store</p>
-              <p className="text-sm">2. Upload Nichi files for semantic comparison</p>
+              <p className="text-sm">2. Upload 日技 files for semantic comparison</p>
               <p className="text-sm">3. AI will retrieve similar documents and analyze</p>
             </div>
           )}
@@ -539,25 +568,12 @@ const SyncEngine: React.FC<SyncEngineProps> = ({ onActiveWorkChange }) => {
                 </div>
               </div>
 
-              {/* Content Comparison */}
-              <div className="grid grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest px-2">
-                    JASRI Content
-                  </h4>
-                  <div className="bg-slate-900 text-indigo-100 p-6 rounded-2xl h-96 overflow-auto font-mono text-xs leading-relaxed border border-slate-800">
-                    {activeResult.jasriContent || 'No JASRI file found'}
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest px-2">
-                    Nichi Content
-                  </h4>
-                  <div className="bg-white border-2 border-indigo-100 p-6 rounded-2xl h-96 overflow-auto font-mono text-xs leading-relaxed text-slate-700 shadow-inner">
-                    {activeResult.nichiContent}
-                  </div>
-                </div>
-              </div>
+              {/* Content Comparison with Diff Highlighting */}
+              <DiffViewer
+                jasriContent={activeResult.jasriContent || 'No JASRI file found'}
+                nichiContent={activeResult.nichiContent}
+                comparisonCase={activeResult.case}
+              />
 
               {/* All Results List */}
               {comparisonResults.length > 1 && (

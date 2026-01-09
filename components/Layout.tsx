@@ -32,10 +32,10 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onViewChange }) =
           <button
             onClick={() => onViewChange(ViewState.EXPLORER)}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${activeView === ViewState.EXPLORER ? 'bg-indigo-600 shadow-lg' : 'hover:bg-slate-800'} ${isSidebarCollapsed ? 'justify-center' : ''}`}
-            title={isSidebarCollapsed ? 'Mind Map Explorer' : ''}
+            title={isSidebarCollapsed ? 'Beamline Explorer' : ''}
           >
             <i className="fa-solid fa-diagram-project w-5"></i>
-            {!isSidebarCollapsed && <span>Mind Map Explorer</span>}
+            {!isSidebarCollapsed && <span>Beamline Explorer</span>}
           </button>
           <button
             onClick={() => onViewChange(ViewState.AUDITOR)}
@@ -48,10 +48,10 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onViewChange }) =
           <button
             onClick={() => onViewChange(ViewState.SYNC)}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${activeView === ViewState.SYNC ? 'bg-indigo-600 shadow-lg' : 'hover:bg-slate-800'} ${isSidebarCollapsed ? 'justify-center' : ''}`}
-            title={isSidebarCollapsed ? 'Sync Engine' : ''}
+            title={isSidebarCollapsed ? 'Manual Comparison' : ''}
           >
             <i className="fa-solid fa-arrows-rotate w-5"></i>
-            {!isSidebarCollapsed && <span>Sync Engine</span>}
+            {!isSidebarCollapsed && <span>Manual Comparison</span>}
           </button>
         </nav>
 

@@ -499,7 +499,7 @@ const BeamlineExplorer: React.FC = () => {
       {/* Sidebar Details Panel - Restricted only to files as per request */}
       {selectedNodeData && selectedNodeData.type === 'file' && (
         <div
-          className="absolute top-10 right-10 w-[440px] bg-white shadow-3xl rounded-[3rem] border-2 border-slate-50 p-12 z-20 animate-in slide-in-from-right duration-500 ease-out flex flex-col gap-10"
+          className="absolute top-10 right-10 w-[360px] bg-white shadow-3xl rounded-[3rem] border-2 border-slate-50 p-8 z-20 animate-in slide-in-from-right duration-500 ease-out flex flex-col gap-6"
           onClick={(e) => e.stopPropagation()}
         >
           <div className="flex justify-between items-start">
@@ -512,11 +512,11 @@ const BeamlineExplorer: React.FC = () => {
                   <i className="fa-solid fa-shield-check"></i> ACTIVE TRACE
                 </span> */}
               </div>
-              <h3 className="text-4xl font-black text-slate-900 leading-tight tracking-tight">{selectedNodeData.name}</h3>
+              <h3 className="text-3xl font-black text-slate-900 leading-tight tracking-tight">{selectedNodeData.name}</h3>
             </div>
             <button
               onClick={() => setSelectedNodeData(null)}
-              className="w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition-all duration-300"
+              className="w-10 h-10 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition-all duration-300"
             >
               <i className="fa-solid fa-xmark text-xl"></i>
             </button>
@@ -524,30 +524,30 @@ const BeamlineExplorer: React.FC = () => {
 
           <div className="space-y-12 overflow-y-auto max-h-[60vh] pr-4 custom-scrollbar">
             <div className="relative">
-              <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.3em] mb-4">Functional Definition</p>
-              <div className="bg-slate-50 p-8 rounded-[2rem] border-2 border-slate-100 text-sm text-slate-600 leading-relaxed font-medium italic relative overflow-hidden group">
-                <div className="absolute left-0 top-0 bottom-0 w-2 bg-indigo-500 group-hover:bg-emerald-500 transition-colors"></div>
+              <p className="text-[9px] font-black text-slate-300 uppercase tracking-[0.3em] mb-4">Overview</p>
+              <div className="bg-slate-50 p-5 rounded-xl border border-slate-100 text-xs text-slate-600 leading-relaxed font-medium italic relative overflow-hidden group">
+                <div className="absolute left-0 top-0 bottom-0 w-1 bg-indigo-500 group-hover:bg-emerald-500 transition-colors"></div>
                 {selectedNodeData.description || "Master technical attachment for beamline infrastructure. Essential for safety and compliance procedures."}
               </div>
             </div>
 
-            <div className="space-y-6">
-              <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.3em]">Storage Details</p>
-              <div className="bg-white p-8 rounded-[2.5rem] border-2 border-slate-100 flex items-center gap-6 group hover:border-indigo-400 transition-all shadow-sm hover:shadow-2xl">
-                <div className="w-20 h-20 bg-rose-50 rounded-3xl flex items-center justify-center shadow-inner group-hover:rotate-6 transition-transform">
-                  <i className="fa-solid fa-file-pdf text-4xl text-rose-500"></i>
+            <div className="space-y-4">
+              <p className="text-[9px] font-black text-slate-300 uppercase tracking-[0.3em]">View File</p>
+              <div className="bg-white p-5 rounded-2xl border border-slate-100 flex items-center gap-4 group hover:border-indigo-400 transition-all shadow-sm hover:shadow-lg">
+                <div className="w-14 h-14 bg-rose-50 rounded-2xl flex items-center justify-center shadow-inner group-hover:rotate-3 transition-transform">
+                  <i className="fa-solid fa-file-pdf text-2xl text-rose-500"></i>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-lg font-black text-slate-800 truncate mb-1">{selectedNodeData.name}</p>
-                  <p className="text-[11px] text-slate-400 font-black tracking-widest uppercase">Verified Master • 2.4 MB</p>
+                  <p className="text-sm font-black text-slate-800 truncate">{selectedNodeData.name}</p>
+                  {/* <p className="text-[11px] text-slate-400 font-black tracking-widest uppercase">Verified Master • 2.4 MB</p> */}
                 </div>
                 <a
                   href={selectedNodeData.fileUrl || "#"}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-14 h-14 bg-slate-900 text-white rounded-[1.25rem] shadow-2xl flex items-center justify-center hover:bg-indigo-600 hover:scale-110 active:scale-95 transition-all"
+                  className="w-10 h-10 bg-slate-900 text-white rounded-xl shadow-md flex items-center justify-center hover:bg-indigo-600 hover:scale-105 active:scale-95 transition-all"
                 >
-                  <i className="fa-solid fa-arrow-down text-lg"></i>
+                  <i className="fa-solid fa-arrow-down text-sm"></i>
                 </a>
               </div>
             </div>

@@ -170,6 +170,48 @@ router.get('/nichi/:beamlineId', async (req, res) => {
 });
 
 /**
+ * Get file content by file ID
+ * GET /api/files/content/:fileId
+ */
+router.get('/content/:fileId', async (req, res) => {
+    try {
+        const { fileId } = req.params;
+
+        // Get file metadata
+        const file = await FirestoreService.getFileMetadata(fileId);
+
+        if (!file) {
+            return res.status(404).json({ error: 'File not found' });
+        }
+
+        // Download file from Cloud Storage
+        const pathParts = file.storagePath.replace('gs://', '').split('/');
+        const bucketName = pathParts[0];
+        const filePath = pathParts.slice(1).join('/');
+
+        const buffer = await CloudStorageService.downloadFile(bucketName, filePath);
+
+        // Process file to extract text
+        const processedDoc = await FileProcessorService.processFile(
+            buffer,
+            file.filename,
+            file.mimeType
+        );
+
+        res.json({
+            success: true,
+            fileId,
+            filename: file.filename,
+            content: processedDoc.content,
+            metadata: processedDoc.metadata,
+        });
+    } catch (error: any) {
+        console.error('Error getting file content:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+/**
  * Index JASRI files into vector store
  * POST /api/files/index
  */

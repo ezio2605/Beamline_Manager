@@ -26,8 +26,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           <div className="w-14 h-14 bg-indigo-100 rounded-2xl flex items-center justify-center mb-6">
             <i className="fa-solid fa-diagram-project text-2xl text-indigo-600"></i>
           </div>
-          <h3 className="text-xl font-bold text-slate-800 mb-3">Beamline Explorer</h3>
-          <p className="text-slate-500 leading-relaxed mb-6">Visualize the hierarchical structure of all 26 beamlines and their core technical systems in an interactive mind map.</p>
+          <h3 className="text-xl font-bold text-slate-800 mb-3">Beamline Manual Explorer</h3>
+          <p className="text-slate-500 leading-relaxed mb-6">Visualize the hierarchical structure of all beamline manuals and their core technical systems in an interactive mind map.</p>
           <div className="flex items-center text-indigo-600 font-bold text-sm">
             Launch Explorer <i className="fa-solid fa-arrow-right ml-2 group-hover:translate-x-1 transition-transform"></i>
           </div>
@@ -79,10 +79,10 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           <div className="w-14 h-14 bg-amber-100 rounded-2xl flex items-center justify-center mb-6">
             <i className="fa-solid fa-shuffle text-2xl text-amber-600"></i>
           </div>
-          <h3 className="text-xl font-bold text-slate-800 mb-3">Sync Engine</h3>
-          <p className="text-slate-500 leading-relaxed mb-6">Automate reconciliation between JASRI and Nichigagi files using Gemini's three-way document logic gate.</p>
+          <h3 className="text-xl font-bold text-slate-800 mb-3">Manual Comparison</h3>
+          <p className="text-slate-500 leading-relaxed mb-6">Automate the comparison and synchronization of JASRI and 日技 operation manual files.</p>
           <div className="flex items-center text-amber-600 font-bold text-sm">
-            Synchronize Now <i className="fa-solid fa-arrow-right ml-2 group-hover:translate-x-1 transition-transform"></i>
+            Compare Now <i className="fa-solid fa-arrow-right ml-2 group-hover:translate-x-1 transition-transform"></i>
           </div>
         </div>
       </div>

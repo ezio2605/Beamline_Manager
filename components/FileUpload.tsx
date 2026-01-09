@@ -98,7 +98,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ selectedBeamline, onFile
                     <i className="fa-solid fa-cloud-arrow-up text-indigo-600"></i>
                 </div>
                 <div>
-                    <h3 className="font-bold text-slate-800">Upload Nichi Files</h3>
+                    <h3 className="font-bold text-slate-800">Upload 日技 Files</h3>
                     <p className="text-xs text-slate-500">Beamline: {selectedBeamline}</p>
                 </div>
             </div>
