@@ -433,7 +433,7 @@ const BeamlineExplorer: React.FC = () => {
         <div className="flex gap-4">
           <button
             onClick={() => { setSelectedBeamline(null); setSelectedNodeData(null); }}
-            className="px-8 py-5 bg-slate-900 text-white rounded-3xl shadow-3xl hover:bg-black transition-all flex items-center gap-4 text-sm font-black group border-b-4 border-slate-800 active:border-b-0 active:translate-y-1"
+            className="px-4 py-2 bg-slate-900 text-white rounded-xl shadow-3xl hover:bg-black transition-all flex items-center gap-2 text-xs font-black group border-b-2 border-slate-800 active:border-b-0 active:translate-y-1"
           >
             <i className="fa-solid fa-arrow-left group-hover:-translate-x-1 transition-transform"></i>
             Back to Registry

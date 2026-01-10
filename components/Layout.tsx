@@ -16,7 +16,18 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onViewChange }) =
       <aside className={`bg-slate-900 text-white flex flex-col shrink-0 shadow-2xl z-50 transition-all duration-300 ease-in-out ${isSidebarCollapsed ? 'w-16' : 'w-64'
         }`}>
         <div className={`p-6 flex items-center gap-3 border-b border-slate-800 ${isSidebarCollapsed ? 'justify-center p-4' : ''}`}>
-          <div className="w-10 h-10 bg-indigo-500 rounded-lg flex items-center justify-center text-xl font-bold shrink-0">J</div>
+          <div className="w-10 h-10 bg-indigo-500 rounded-lg flex items-center justify-center shrink-0 overflow-hidden">
+            <img
+              src={import.meta.env.LOGO_URL || "/logo.jpg"}
+              alt="Logo"
+              className="w-full h-full object-contain"
+              onError={(e) => {
+                // Fallback to "S8" if image fails to load
+                e.currentTarget.style.display = 'none';
+                e.currentTarget.parentElement!.innerHTML = '<span class="text-xl font-bold text-white">S8</span>';
+              }}
+            />
+          </div>
           {!isSidebarCollapsed && <h1 className="text-lg font-bold leading-tight">Beamline Manager</h1>}
         </div>
 
@@ -37,14 +48,14 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onViewChange }) =
             <i className="fa-solid fa-diagram-project w-5"></i>
             {!isSidebarCollapsed && <span>Beamline Explorer</span>}
           </button>
-          <button
+          {/* <button
             onClick={() => onViewChange(ViewState.AUDITOR)}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${activeView === ViewState.AUDITOR ? 'bg-indigo-600 shadow-lg' : 'hover:bg-slate-800'} ${isSidebarCollapsed ? 'justify-center' : ''}`}
             title={isSidebarCollapsed ? 'Structural Auditor' : ''}
           >
             <i className="fa-solid fa-list-check w-5"></i>
             {!isSidebarCollapsed && <span>Structural Auditor</span>}
-          </button>
+          </button> */}
           <button
             onClick={() => onViewChange(ViewState.SYNC)}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${activeView === ViewState.SYNC ? 'bg-indigo-600 shadow-lg' : 'hover:bg-slate-800'} ${isSidebarCollapsed ? 'justify-center' : ''}`}

@@ -34,7 +34,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         </div>
 
         {/* Card 2 */}
-        <div
+        {/* <div
           onClick={() => onNavigate(ViewState.AUDITOR)}
           className="group relative bg-white p-8 rounded-3xl border border-slate-200 shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all cursor-pointer overflow-hidden"
         >
@@ -49,7 +49,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           <div className="flex items-center text-emerald-600 font-bold text-sm">
             Audit Documentation <i className="fa-solid fa-arrow-right ml-2 group-hover:translate-x-1 transition-transform"></i>
           </div>
-        </div>
+        </div> */}
 
         {/* <div
           onClick={() => onNavigate(ViewState.AUDITOR)}
