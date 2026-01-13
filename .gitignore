@@ -40,3 +40,7 @@ service-account-key.json
 !package-lock.json
 !tsconfig.json
 !vite.config.json
+
+# Documentation files (exclude from Git, keep README only)
+*.md
+!README.md

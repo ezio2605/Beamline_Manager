@@ -1,14 +1,20 @@
-# Beamline Manual Management System - Cloud Edition
+# Beamline Manual Management System
 
-A cloud-native application for managing and comparing JASRI beamline operation manual files using AI-powered semantic analysis.
+> A cloud-native AI-powered platform for managing, visualizing, and comparing operation manuals across 26 JASRI synchrotron beamlines at SPring-8.
 
-## 🌟 Features
+## 🎯 What is This?
 
-- **Cloud Storage**: Files stored in Google Cloud Storage
-- **Vector Search**: RAG-enhanced semantic search using Firestore
-- **AI Comparison**: Gemini-powered file comparison
-- **Auto-Deploy**: Continuous deployment from GitHub to Cloud Run
-- **Scalable**: Automatically scales based on traffic
+This system automates the comparison and synchronization of operation manuals between **JASRI** (Japan Synchrotron Radiation Research Institute) and **Nichigagi (日技)** contractor documentation. It uses Google's Gemini AI with RAG (Retrieval-Augmented Generation) technology to perform semantic analysis and intelligent document comparison.
+
+## ✨ Key Features
+
+- 🗺️ **Interactive Mind Map**: Visualize all 26 beamlines and their documentation hierarchy
+- 🤖 **AI-Powered Comparison**: Semantic analysis using Gemini AI with RAG technology
+- ☁️ **Cloud-Native**: Built on Google Cloud Platform (Cloud Run, Cloud Storage, Firestore)
+- 🔄 **Automated Workflow**: Three-case classification system (Update, Match, New)
+- 📊 **Real-time Progress**: Track indexing and comparison progress
+- 🚀 **Auto-Deploy**: Continuous deployment from GitHub to Cloud Run
+- 📱 **Responsive Design**: Works on desktop, tablet, and mobile
 
 ## 🏗️ Architecture
 
@@ -63,9 +69,31 @@ See [DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md) for complete step-by-step instr
 
 ## 📚 Documentation
 
-- [Vertex AI Migration Guide](./VERTEX_AI_MIGRATION.md) - **NEW!** Migration from Google AI Studio to Vertex AI
-- [Deployment Guide](./DEPLOYMENT_GUIDE.md) - Complete deployment walkthrough
-- [Implementation Plan](./implementation_plan.md) - Technical architecture details
+> **📋 [Documentation Index](./DOCS_INDEX.md)** - Complete guide to all documentation files
+
+### Getting Started
+- **[📖 Complete Documentation](./DOCUMENTATION.md)** - Comprehensive guide covering everything
+- **[⚡ Quick Start Guide](./QUICK_START.md)** - Get up and running in 5 minutes
+- **[🎯 Feature Overview](./FEATURES.md)** - Detailed feature descriptions with diagrams
+- **[🚀 Deployment Guide](./DEPLOYMENT_GUIDE.md)** - Step-by-step Cloud Run deployment
+
+### Technical Guides
+- **[🗺️ Beamline Mind Map Guide](./BEAMLINE_MINDMAP_GUIDE.md)** - Mind map implementation details
+- **[📏 Dynamic Sizing Guide](./DYNAMIC_SIZING_GUIDE.md)** - Dynamic visualization sizing
+- **[📤 Upload Guide](./UPLOAD_GUIDE.md)** - File upload system architecture
+- **[🔧 Resource Management Scripts](./scripts/README.md)** - Upload files and edit mindmaps
+
+### What's Inside?
+
+The **[Complete Documentation](./DOCUMENTATION.md)** covers:
+- ✅ Project overview and purpose
+- ✅ Detailed feature descriptions
+- ✅ System architecture and data flow
+- ✅ Complete user guide with screenshots
+- ✅ API reference
+- ✅ Troubleshooting guide
+- ✅ Security considerations
+- ✅ Performance benchmarks
 
 ## 🔧 Environment Variables
 

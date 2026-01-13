@@ -23,7 +23,7 @@ export interface FileMetadata {
     uploadedAt: string;
     status: 'uploaded' | 'indexed' | 'processed' | 'error';
     lastCompared?: string;
-    comparisonCase?: 'case1' | 'case2' | 'case3';
+    comparisonCase?: 'case1' | 'case2' | 'case3' | 'case4' | 'case5';
 }
 
 export interface ComparisonResult {
@@ -31,7 +31,7 @@ export interface ComparisonResult {
     jasriFileId?: string;
     nichiFileId: string;
     beamlineId: string;
-    case: 'case1' | 'case2' | 'case3';
+    case: 'case1' | 'case2' | 'case3' | 'case4' | 'case5';
     timestamp: string;
     differences: string;
     aiInsights: string;

@@ -5,7 +5,7 @@ import * as Diff from 'diff';
 interface DiffViewerProps {
     jasriContent: string;
     nichiContent: string;
-    comparisonCase: 'case1' | 'case2' | 'case3';
+    comparisonCase: 'case1' | 'case2' | 'case3' | 'case4' | 'case5';
 }
 
 type DiffLine = {
@@ -184,13 +184,20 @@ const DiffViewer: React.FC<DiffViewerProps> = ({ jasriContent, nichiContent, com
                     日技 Content
                     <span
                         className={`text-[10px] px-2 py-0.5 rounded normal-case font-bold ${comparisonCase === 'case1'
-                            ? 'bg-amber-100 text-amber-700'
-                            : comparisonCase === 'case2'
-                                ? 'bg-emerald-100 text-emerald-700'
-                                : 'bg-indigo-100 text-indigo-700'
+                                ? 'bg-amber-100 text-amber-700'
+                                : comparisonCase === 'case2'
+                                    ? 'bg-emerald-100 text-emerald-700'
+                                    : comparisonCase === 'case3'
+                                        ? 'bg-indigo-100 text-indigo-700'
+                                        : comparisonCase === 'case4'
+                                            ? 'bg-red-100 text-red-700'
+                                            : 'bg-purple-100 text-purple-700'
                             }`}
                     >
-                        {comparisonCase === 'case1' ? 'UPDATE' : comparisonCase === 'case2' ? 'MATCH' : 'NEW'}
+                        {comparisonCase === 'case1' ? 'UPDATE' :
+                            comparisonCase === 'case2' ? 'MATCH' :
+                                comparisonCase === 'case3' ? 'NEW' :
+                                    comparisonCase === 'case4' ? 'OUTDATED' : 'RELATED'}
                     </span>
                 </h4>
                 <div className="bg-white rounded-2xl border-2 border-indigo-200 overflow-hidden shadow-sm">

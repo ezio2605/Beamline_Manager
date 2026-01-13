@@ -103,7 +103,7 @@ export class ComparisonService {
                 case: comparisonCase,
                 timestamp: new Date().toISOString(),
                 differences,
-                aiInsights: insights + this.formatRAGInsights(similarDocs),
+                aiInsights: this.formatAIInsights(differences, insights, similarDocs),
                 actionTaken,
                 retrievedDocs: similarDocs.map(doc => ({
                     filename: doc.document.metadata.filename || 'Unknown',
@@ -140,6 +140,34 @@ export class ComparisonService {
         });
 
         return context;
+    }
+
+    /**
+     * Format complete AI insights including differences, key insights, and RAG analysis
+     */
+    private static formatAIInsights(
+        differences: string,
+        insights: string,
+        similarDocs: SimilarDocument[]
+    ): string {
+        let formattedInsights = '';
+
+        // Add differences section if available
+        if (differences && differences.trim() !== '' && !differences.toLowerCase().includes('none')) {
+            formattedInsights += '📋 Specific Differences:\n';
+            formattedInsights += differences + '\n\n';
+        }
+
+        // Add key insights
+        if (insights && insights.trim() !== '') {
+            formattedInsights += '💡 Key Insights:\n';
+            formattedInsights += insights + '\n';
+        }
+
+        // Add RAG analysis
+        formattedInsights += this.formatRAGInsights(similarDocs);
+
+        return formattedInsights;
     }
 
     /**
@@ -193,34 +221,45 @@ ${nichiContent}
 ${hasRAGContext ? ragContext : ''}
 
 **Your Task**:
-Analyze these files ${hasRAGContext ? 'along with the retrieved similar documents' : ''} and classify the comparison into ONE of these three cases:
+Analyze these files ${hasRAGContext ? 'along with the retrieved similar documents' : ''} and classify the comparison into ONE of these five cases:
 
-**Case 1 (Update)**: The Nichi file contains MORE DETAILED or ADDITIONAL information compared to the JASRI file. This means Nichi has extra technical details, procedures, specifications, or explanations that enhance the JASRI content.
+**Case 1 (Update)**: The Nichi file and JASRI file are THE SAME DOCUMENT, and Nichi contains MORE DETAILED or ADDITIONAL information. This means they cover the same topic/system/procedure, but Nichi has extra technical details, procedures, specifications, or explanations that enhance the JASRI content.
 
-**Case 2 (Match)**: Both files contain essentially the SAME information. The content is equivalent, even if wording differs slightly.
+**Case 2 (Match)**: Both files are THE SAME DOCUMENT and contain essentially the SAME information. The content is equivalent, even if wording differs slightly.
 
-**Case 3 (New)**: The Nichi file covers a NEW topic or item that is NOT present in the JASRI file at all. This is entirely new content, not just an enhancement.
+**Case 3 (New)**: The Nichi file covers a COMPLETELY NEW and UNRELATED topic that is NOT present in the JASRI file at all. This is entirely new content with no relation to existing documents.
+
+**Case 4 (Outdated)**: The Nichi file and JASRI file are THE SAME DOCUMENT, but Nichi contains LESS information or is MISSING details compared to JASRI. This means the Nichi file is outdated, incomplete, or has less comprehensive content than JASRI.
+
+**Case 5 (Related)**: The Nichi file and JASRI file are DIFFERENT DOCUMENTS or procedures from the same beamline or system. They may cover related topics, share similar structure, or belong to the same category, but they are DISTINCT documents that should COEXIST rather than replace each other. Examples: "Vacuum System Procedure" vs "Cooling System Procedure", "Safety Protocol A" vs "Safety Protocol B", or different subsystem manuals.
 
 ${hasRAGContext ? `**RAG Context**: The system found ${similarDocs.length} similar document(s) with a top similarity score of ${(similarDocs[0].score * 100).toFixed(1)}%. Consider this semantic similarity in your analysis.` : ''}
+
+**IMPORTANT INSTRUCTIONS**:
+- DO NOT mention or reference the filenames in your response
+- Focus ONLY on analyzing the content differences
+- Avoid including any file names or paths in your analysis
+- The filenames may contain special characters that should not be included in your response
+- **CRITICAL**: Distinguish between "same document with updates" (Case 1/2/4) vs "different documents from same beamline" (Case 5)
 
 **Response Format**:
 Provide your analysis in this exact format:
 
-CASE: [1, 2, or 3]
+CASE: [1, 2, 3, 4, or 5]
 
 REASONING:
-[Explain why you chose this case${hasRAGContext ? ', considering the RAG-retrieved similar documents' : ''}]
+[Explain why you chose this case${hasRAGContext ? ', considering the RAG-retrieved similar documents' : ''}. Do NOT mention filenames.]
 
 DIFFERENCES:
-[List specific differences or state "None" for Case 2]
+[List specific content differences or state "None" for Case 2. Focus on technical content only, not file names.]
 
 KEY_INSIGHTS:
-[Provide actionable insights about the comparison${hasRAGContext ? ', including how the retrieved documents informed your decision' : ''}]
+[Provide actionable insights about the content comparison${hasRAGContext ? ', including how the retrieved documents informed your decision' : ''}. Do NOT reference filenames.]
 
 RECOMMENDATION:
-[What action should be taken with these files]
+[What action should be taken based on the content analysis]
 
-Be precise and technical in your analysis.`;
+Be precise and technical in your analysis, focusing solely on content.`;
     }
 
     /**
@@ -230,7 +269,7 @@ Be precise and technical in your analysis.`;
         aiResponse: string,
         jasriFile: FileMetadata | undefined,
         similarDocs: SimilarDocument[]
-    ): 'case1' | 'case2' | 'case3' {
+    ): 'case1' | 'case2' | 'case3' | 'case4' | 'case5' {
         // If no JASRI file exists and no similar docs found, it's Case 3 (New)
         if (!jasriFile && similarDocs.length === 0) {
             return 'case3';
@@ -243,6 +282,8 @@ Be precise and technical in your analysis.`;
             if (caseNumber === 1) return 'case1';
             if (caseNumber === 2) return 'case2';
             if (caseNumber === 3) return 'case3';
+            if (caseNumber === 4) return 'case4';
+            if (caseNumber === 5) return 'case5';
         }
 
         // Fallback: analyze keywords in response
@@ -255,6 +296,14 @@ Be precise and technical in your analysis.`;
         }
         if (lowerResponse.includes('new') || lowerResponse.includes('not present')) {
             return 'case3';
+        }
+        if (lowerResponse.includes('less information') || lowerResponse.includes('outdated') ||
+            lowerResponse.includes('incomplete') || lowerResponse.includes('missing details')) {
+            return 'case4';
+        }
+        if (lowerResponse.includes('different documents') || lowerResponse.includes('related but distinct') ||
+            lowerResponse.includes('separate procedures') || lowerResponse.includes('should coexist')) {
+            return 'case5';
         }
 
         // Default to case1 if unclear
@@ -280,7 +329,7 @@ Be precise and technical in your analysis.`;
     /**
      * Get action description based on case
      */
-    private static getActionDescription(comparisonCase: 'case1' | 'case2' | 'case3'): string {
+    private static getActionDescription(comparisonCase: 'case1' | 'case2' | 'case3' | 'case4' | 'case5'): string {
         switch (comparisonCase) {
             case 'case1':
                 return '日技 file has more details (more detailed information found)';
@@ -288,6 +337,10 @@ Be precise and technical in your analysis.`;
                 return 'JASRI file matches 日技 file (content matches)';
             case 'case3':
                 return '日技 file is a new item (not present in JASRI)';
+            case 'case4':
+                return '日技 file has less information (outdated or incomplete)';
+            case 'case5':
+                return 'Different but related documents from same beamline (both should be kept)';
         }
     }
 
@@ -320,6 +373,22 @@ Be precise and technical in your analysis.`;
 
             case 'case3':
                 // Add Nichi file as new JASRI item
+                await FirestoreService.updateFileStatus(nichiFile.id, 'processed');
+                break;
+
+            case 'case4':
+                // Nichi file is outdated - mark both as processed but flag for review
+                if (jasriFile) {
+                    await FirestoreService.updateFileStatus(jasriFile.id, 'processed');
+                }
+                await FirestoreService.updateFileStatus(nichiFile.id, 'processed');
+                break;
+
+            case 'case5':
+                // Related but different documents - keep both
+                if (jasriFile) {
+                    await FirestoreService.updateFileStatus(jasriFile.id, 'processed');
+                }
                 await FirestoreService.updateFileStatus(nichiFile.id, 'processed');
                 break;
         }

@@ -18,7 +18,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onViewChange }) =
         <div className={`p-6 flex items-center gap-3 border-b border-slate-800 ${isSidebarCollapsed ? 'justify-center p-4' : ''}`}>
           <div className="w-10 h-10 bg-indigo-500 rounded-lg flex items-center justify-center shrink-0 overflow-hidden">
             <img
-              src={import.meta.env.LOGO_URL || "/logo.jpg"}
+              src="https://storage.cloud.google.com/project-img/logo/logo.jpg"
               alt="Logo"
               className="w-full h-full object-contain"
               onError={(e) => {

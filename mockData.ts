@@ -10,74 +10,448 @@ export const BEAMLINE_MANUALS: Array<{ name: string; data: BeamlineNode; descrip
             type: 'beamline',
             children: [
                 {
-                    name: 'Safety Protocols',
+                    name: '利用期開始時の立ち上げ',
                     type: 'system',
                     children: [
+
                         {
-                            name: 'Radiation Safety Manual',
-                            type: 'file',
-                            fileUrl: '/docs/bl01/radiation_safety.pdf',
-                            description: 'Comprehensive radiation safety procedures'
-                        },
-                        {
-                            name: 'Emergency Shutdown Procedures',
-                            type: 'file',
-                            fileUrl: '/docs/bl01/emergency_shutdown.pdf',
-                            description: 'Step-by-step emergency protocols'
-                        }
-                    ]
-                },
-                {
-                    name: 'Equipment Manuals',
-                    type: 'system',
-                    children: [
-                        {
-                            name: 'Monochromator',
+                            name: '機器立ち上げ',
                             type: 'procedure',
                             children: [
+                                // {
+                                //     name: 'Alignment Guide',
+                                //     type: 'file',
+                                //     fileUrl: '/docs/bl01/mono_alignment.pdf',
+                                //     description: 'Monochromator alignment procedures'
+                                // },
+                                // {
+                                //     name: 'Calibration Protocol',
+                                //     type: 'file',
+                                //     fileUrl: '/docs/bl01/mono_calibration.pdf',
+                                //     description: 'Energy calibration steps'
+                                // }
                                 {
-                                    name: 'Alignment Guide',
-                                    type: 'file',
-                                    fileUrl: '/docs/bl01/mono_alignment.pdf',
-                                    description: 'Monochromator alignment procedures'
+                                    name: '真空機器 立ち上げ',
+                                    type: 'procedure',
+                                    // children: [
+                                    //     {
+                                    //         name: 'Alignment Guide',
+                                    //         type: 'file',
+                                    //         fileUrl: '/docs/bl01/mono_alignment.pdf',
+                                    //         description: 'Monochromator alignment procedures'
+                                    //     },
+                                    //     {
+                                    //         name: 'Calibration Protocol',
+                                    //         type: 'file',
+                                    //         fileUrl: '/docs/bl01/mono_calibration.pdf',
+                                    //         description: 'Energy calibration steps'
+                                    //     }
+                                    // ]
                                 },
                                 {
-                                    name: 'Calibration Protocol',
-                                    type: 'file',
-                                    fileUrl: '/docs/bl01/mono_calibration.pdf',
-                                    description: 'Energy calibration steps'
+                                    name: '冷却系 立ち上げ',
+                                    type: 'procedure',
+                                    // children: [
+                                    //     {
+                                    //         name: 'Alignment Guide',
+                                    //         type: 'file',
+                                    //         fileUrl: '/docs/bl01/mono_alignment.pdf',
+                                    //         description: 'Monochromator alignment procedures'
+                                    //     },
+                                    //     {
+                                    //         name: 'Calibration Protocol',
+                                    //         type: 'file',
+                                    //         fileUrl: '/docs/bl01/mono_calibration.pdf',
+                                    //         description: 'Energy calibration steps'
+                                    //     }
+                                    // ]
+                                },
+                                {
+                                    name: '実験装置 利用期初立ち上げ',
+                                    type: 'procedure',
+                                    // children: [
+                                    //     {
+                                    //         name: 'Alignment Guide',
+                                    //         type: 'file',
+                                    //         fileUrl: '/docs/bl01/mono_alignment.pdf',
+                                    //         description: 'Monochromator alignment procedures'
+                                    //     },
+                                    //     {
+                                    //         name: 'Calibration Protocol',
+                                    //         type: 'file',
+                                    //         fileUrl: '/docs/bl01/mono_calibration.pdf',
+                                    //         description: 'Energy calibration steps'
+                                    //     }
+                                    // ]
+                                },
+                                {
+                                    name: '蛍光検出器の立ち上げ',
+                                    type: 'procedure',
+                                    children: [
+                                        {
+                                            name: 'User Manual - HPGe Specialty X-ray detectors - 36PIX',
+                                            type: 'file',
+                                            fileUrl: 'https://storage.cloud.google.com/docs-bl/bl01b1/User Manual - HPGe Specialty X-ray detectors - 36PIX.pdf',
+                                            description: 'Hardware manual'
+                                        }
+
+                                    ]
                                 }
                             ]
                         },
                         {
-                            name: 'Detector Systems',
+                            name: 'ビーム調整',
+                            type: 'procedure',
+                            children: [
+                                // {
+                                //     name: 'Alignment Guide',
+                                //     type: 'file',
+                                //     fileUrl: '/docs/bl01/mono_alignment.pdf',
+                                //     description: 'Monochromator alignment procedures'
+                                // },
+                                // {
+                                //     name: 'Calibration Protocol',
+                                //     type: 'file',
+                                //     fileUrl: '/docs/bl01/mono_calibration.pdf',
+                                //     description: 'Energy calibration steps'
+                                // }
+                                {
+                                    name: 'ビーム 利用期初調整',
+                                    type: 'procedure',
+                                    // children: [
+                                    //     {
+                                    //         name: 'Alignment Guide',
+                                    //         type: 'file',
+                                    //         fileUrl: '/docs/bl01/mono_alignment.pdf',
+                                    //         description: 'Monochromator alignment procedures'
+                                    //     },
+                                    //     {
+                                    //         name: 'Calibration Protocol',
+                                    //         type: 'file',
+                                    //         fileUrl: '/docs/bl01/mono_calibration.pdf',
+                                    //         description: 'Energy calibration steps'
+                                    //     }
+                                    // ]
+                                },
+                                {
+                                    name: '光学系調整',
+                                    type: 'procedure',
+                                    children: [
+                                        {
+                                            name: 'BL01B1opticsman 041221',
+                                            type: 'file',
+                                            fileUrl: 'https://storage.cloud.google.com/docs-bl/bl01b1/BL01B1opticsman041221.pdf',
+                                            description: 'Arrangement of slits, mirrors, and spectrometers'
+                                        },
+                                        {
+                                            name: 'BL01B1opticsman 160329',
+                                            type: 'file',
+                                            fileUrl: 'https://storage.cloud.google.com/docs-bl/bl01b1/BL01B1opticsman160329.pdf',
+                                            description: 'updated version of BL01B1opticsman041221'
+                                        },
+                                        {
+                                            name: 'man_movetheta',
+                                            type: 'file',
+                                            fileUrl: 'https://storage.cloud.google.com/docs-bl/bl01b1/man_movetheta.pdf',
+                                            description: 'Operation manual for the spectrometer controller'
+                                        },
+                                        {
+                                            name: 'SP8_BM分光器アラインメント手順_070607',
+                                            type: 'file',
+                                            fileUrl: 'https://storage.cloud.google.com/docs-bl/bl01b1/SP8_BM分光器アラインメント手順_070607.pdf',
+                                            description: 'offline and online alignment procedures'
+                                        }
+                                    ]
+                                },
+                                {
+                                    name: 'ビーム定位置出射調整 、ミラー原点調整',
+                                    type: 'procedure',
+                                    children: [
+                                        {
+                                            name: 'ミラー精密光軸調整_060915',
+                                            type: 'file',
+                                            fileUrl: 'https://storage.cloud.google.com/docs-bl/bl01b1/ミラー精密光軸調整_060915.pdf',
+                                            description: 'Formulas and correction procedures'
+                                        },
+                                        {
+                                            name: 'man_TCstage controller',
+                                            type: 'file',
+                                            fileUrl: 'https://storage.cloud.google.com/docs-bl/bl01b1/man_TCstage_controller.pdf',
+                                            description: 'Manual for the Transport Channel tilt'
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            name: '実験装置調整',
+                            type: 'procedure',
+                            // children: [
+                            //     {
+                            //         name: 'Alignment Guide',
+                            //         type: 'file',
+                            //         fileUrl: '/docs/bl01/mono_alignment.pdf',
+                            //         description: 'Monochromator alignment procedures'
+                            //     },
+                            //     {
+                            //         name: 'Calibration Protocol',
+                            //         type: 'file',
+                            //         fileUrl: '/docs/bl01/mono_calibration.pdf',
+                            //         description: 'Energy calibration steps'
+                            //     }
+                            // ]
+                        }
+                    ]
+                },
+                {
+                    name: 'ビームライン利用実験運用',
+                    type: 'system',
+                    children: [
+                        {
+                            name: 'XAFS計測システム',
                             type: 'procedure',
                             children: [
                                 {
-                                    name: 'CCD Detector Manual',
-                                    type: 'file',
-                                    fileUrl: '/docs/bl01/ccd_detector.pdf',
-                                    description: 'CCD detector operation guide'
+                                    name: '準備 (HV印加, XRD/DRIFT切替, LN2補充',
+                                    type: 'procedure',
+                                    children: [
+                                        {
+                                            name: 'SSD_QuickReference 20240419',
+                                            type: 'file',
+                                            fileUrl: 'https://storage.cloud.google.com/docs-bl/bl01b1/SSD_QuickReference_20240419.pdf',
+                                            description: 'Quick guide for gain adjustment'
+                                        }
+                                    ]
+                                },
+                                {
+                                    name: 'ビーム 調整',
+                                    type: 'procedure',
+                                    // children: [
+                                    //     {
+                                    //         name: 'Alignment Guide',
+                                    //         type: 'file',
+                                    //         fileUrl: '/docs/bl01/mono_alignment.pdf',
+                                    //         description: 'Monochromator alignment procedures'
+                                    //     },
+                                    //     {
+                                    //         name: 'Calibration Protocol',
+                                    //         type: 'file',
+                                    //         fileUrl: '/docs/bl01/mono_calibration.pdf',
+                                    //         description: 'Energy calibration steps'
+                                    //     }
+                                    // ]
+                                },
+                                {
+                                    name: '実験装置の調整',
+                                    type: 'procedure',
+                                    children: [
+                                        {
+                                            name: 'APN504_Quickreference 20221026',
+                                            type: 'file',
+                                            fileUrl: 'https://storage.cloud.google.com/docs-bl/bl01b1/APN504_Quickreference_20221026.pdf',
+                                            description: 'Instructions for setting up DSP'
+                                        },
+                                        {
+                                            name: 'xManagerManual 071016J',
+                                            type: 'file',
+                                            fileUrl: 'https://storage.cloud.google.com/docs-bl/bl01b1/xManagerManual071016J.pdf',
+                                            description: 'manual for adjusting parameters (Peaking Time, etc.) '
+                                        }
+                                    ]
+                                },
+                                {
+                                    name: 'ビーム 較正作業',
+                                    type: 'procedure',
+                                    children: [
+                                        {
+                                            name: 'man_deadtime correction for MSSD',
+                                            type: 'file',
+                                            fileUrl: 'https://storage.cloud.google.com/docs-bl/bl01b1/man_deadtime correction for MSSD.pdf',
+                                            description: 'correct dead time in measurement data'
+                                        }
+                                    ]
+                                },
+                                {
+                                    name: '実験装置 実験レイアウトセットアップ',
+                                    type: 'procedure',
+                                    // children: [
+                                    //     {
+                                    //         name: 'Alignment Guide',
+                                    //         type: 'file',
+                                    //         fileUrl: '/docs/bl01/mono_alignment.pdf',
+                                    //         description: 'Monochromator alignment procedures'
+                                    //     },
+                                    //     {
+                                    //         name: 'Calibration Protocol',
+                                    //         type: 'file',
+                                    //         fileUrl: '/docs/bl01/mono_calibration.pdf',
+                                    //         description: 'Energy calibration steps'
+                                    //     }
+                                    // ]
+                                },
+                                {
+                                    name: '実験実施',
+                                    type: 'procedure',
+                                    // children: [
+                                    //     {
+                                    //         name: 'Alignment Guide',
+                                    //         type: 'file',
+                                    //         fileUrl: '/docs/bl01/mono_alignment.pdf',
+                                    //         description: 'Monochromator alignment procedures'
+                                    //     },
+                                    //     {
+                                    //         name: 'Calibration Protocol',
+                                    //         type: 'file',
+                                    //         fileUrl: '/docs/bl01/mono_calibration.pdf',
+                                    //         description: 'Energy calibration steps'
+                                    //     }
+                                    // ]
+                                },
+                                {
+                                    name: '実験終了時作業',
+                                    type: 'procedure',
+                                    // children: [
+                                    //     {
+                                    //         name: 'Alignment Guide',
+                                    //         type: 'file',
+                                    //         fileUrl: '/docs/bl01/mono_alignment.pdf',
+                                    //         description: 'Monochromator alignment procedures'
+                                    //     },
+                                    //     {
+                                    //         name: 'Calibration Protocol',
+                                    //         type: 'file',
+                                    //         fileUrl: '/docs/bl01/mono_calibration.pdf',
+                                    //         description: 'Energy calibration steps'
+                                    //     }
+                                    // ]
+                                },
+                            ]
+                        },
+                        {
+                            name: 'ガス供給排気装置',
+                            type: 'procedure',
+                            children: [
+                                {
+                                    name: '実験装置の準備',
+                                    type: 'procedure',
+                                    children: [
+                                        {
+                                            name: 'man_Pfeiffer_GSD350',
+                                            type: 'file',
+                                            fileUrl: 'https://storage.cloud.google.com/docs-bl/bl01b1/man_Pfeiffer_GSD350.pdf',
+                                            description: 'installing and operating a gas analysis system'
+                                        }
+                                    ]
+                                },
+                                {
+                                    name: '実験装置 実験レイアウトセットアップ',
+                                    type: 'procedure',
+                                    children: [
+                                        {
+                                            name: 'man_Agilent 990 Micro GC',
+                                            type: 'file',
+                                            fileUrl: 'https://storage.cloud.google.com/docs-bl/bl01b1/man_Agilent%20990%20Micro%20GC.pdf',
+                                            description: 'Gas chromatograph (Agilent 990) installation'
+                                        },
+                                        {
+                                            name: 'QMAS-μGC操作マニュアルまとめ',
+                                            type: 'file',
+                                            fileUrl: 'https://storage.cloud.google.com/docs-bl/bl01b1/QMAS-μGC操作マニュアルまとめ.pdf',
+                                            description: 'Gas analyzer setup instructions'
+                                        }
+                                    ]
+                                },
+                                {
+                                    name: '実験実施',
+                                    type: 'procedure',
+                                    children: [
+                                        {
+                                            name: 'man_gas_interlock',
+                                            type: 'file',
+                                            fileUrl: 'https://storage.cloud.google.com/docs-bl/bl01b1/man_gas_interlock.pdf',
+                                            description: 'Instructions for the operation screen'
+                                        }
+                                    ]
+                                },
+                                {
+                                    name: '実験終了時作業',
+                                    type: 'procedure',
+                                    // children: [
+                                    //     {
+                                    //         name: 'Alignment Guide',
+                                    //         type: 'file',
+                                    //         fileUrl: '/docs/bl01/mono_alignment.pdf',
+                                    //         description: 'Monochromator alignment procedures'
+                                    //     },
+                                    //     {
+                                    //         name: 'Calibration Protocol',
+                                    //         type: 'file',
+                                    //         fileUrl: '/docs/bl01/mono_calibration.pdf',
+                                    //         description: 'Energy calibration steps'
+                                    //     }
+                                    // ]
                                 }
                             ]
                         }
                     ]
                 },
                 {
-                    name: 'Experimental Procedures',
+                    name: '利用期終了時',
                     type: 'system',
                     children: [
                         {
-                            name: 'Sample Preparation',
-                            type: 'file',
-                            fileUrl: '/docs/bl01/sample_prep.pdf',
-                            description: 'Crystal sample preparation guidelines'
+                            name: '機器立ち下げ (分光器移動)',
+                            type: 'procedure',
+                            // children: [
+                            //     {
+                            //         name: 'Alignment Guide',
+                            //         type: 'file',
+                            //         fileUrl: '/docs/bl01/mono_alignment.pdf',
+                            //         description: 'Monochromator alignment procedures'
+                            //     },
+                            //     {
+                            //         name: 'Calibration Protocol',
+                            //         type: 'file',
+                            //         fileUrl: '/docs/bl01/mono_calibration.pdf',
+                            //         description: 'Energy calibration steps'
+                            //     }
+                            // ]
                         },
                         {
-                            name: 'Data Collection Protocol',
-                            type: 'file',
-                            fileUrl: '/docs/bl01/data_collection.pdf',
-                            description: 'Standard data collection procedures'
+                            name: 'A期終了時（夏期点検調整期間開始時）',
+                            type: 'procedure',
+                            // children: [
+                            //     {
+                            //         name: 'Alignment Guide',
+                            //         type: 'file',
+                            //         fileUrl: '/docs/bl01/mono_alignment.pdf',
+                            //         description: 'Monochromator alignment procedures'
+                            //     },
+                            //     {
+                            //         name: 'Calibration Protocol',
+                            //         type: 'file',
+                            //         fileUrl: '/docs/bl01/mono_calibration.pdf',
+                            //         description: 'Energy calibration steps'
+                            //     }
+                            // ]
+                        },
+                        {
+                            name: 'B期終了時（年度末点検調整期間開始時）',
+                            type: 'procedure',
+                            // children: [
+                            //     {
+                            //         name: 'Alignment Guide',
+                            //         type: 'file',
+                            //         fileUrl: '/docs/bl01/mono_alignment.pdf',
+                            //         description: 'Monochromator alignment procedures'
+                            //     },
+                            //     {
+                            //         name: 'Calibration Protocol',
+                            //         type: 'file',
+                            //         fileUrl: '/docs/bl01/mono_calibration.pdf',
+                            //         description: 'Energy calibration steps'
+                            //     }
+                            // ]
                         }
                     ]
                 }

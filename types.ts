@@ -51,7 +51,7 @@ export interface FileMetadata {
   originalPath: string;
   currentVersion: string;
   lastCompared: string | null;
-  comparisonCase: 'case1' | 'case2' | 'case3' | null;
+  comparisonCase: 'case1' | 'case2' | 'case3' | 'case4' | 'case5' | null;
   nichiSource: string | null;
   fileSize: number;
   fileType: string;
@@ -108,7 +108,7 @@ export interface ComparisonResult {
   jasriFile: FileMetadata | null;
   nichiFile: UploadedFile;
   beamlineId: string;
-  case: 'case1' | 'case2' | 'case3';
+  case: 'case1' | 'case2' | 'case3' | 'case4' | 'case5';
   timestamp: string;
   jasriContent: string;
   nichiContent: string;

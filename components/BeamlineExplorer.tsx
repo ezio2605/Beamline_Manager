@@ -18,6 +18,12 @@ const BeamlineExplorer: React.FC = () => {
   // D3 state management for hierarchy
   const [rootHierarchy, setRootHierarchy] = useState<d3.HierarchyNode<BeamlineNode> | null>(null);
 
+  // Draggable panel state
+  const [panelPosition, setPanelPosition] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const panelRef = useRef<HTMLDivElement>(null);
+
   const filteredBeamlines = BEAMLINE_MANUALS.filter(bl =>
     bl.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -119,6 +125,73 @@ const BeamlineExplorer: React.FC = () => {
 
     svg.transition().duration(750).call(zoomRef.current.transform, t);
   };
+
+  // Drag handlers for the file detail panel
+  const handlePanelMouseDown = (e: React.MouseEvent) => {
+    // Only allow dragging from the header area
+    const target = e.target as HTMLElement;
+    if (target.closest('button') || target.closest('a')) return;
+
+    if (!containerRef.current) return;
+
+    const containerRect = containerRef.current.getBoundingClientRect();
+
+    setIsDragging(true);
+    setDragStart({
+      x: e.clientX - containerRect.left - panelPosition.x,
+      y: e.clientY - containerRect.top - panelPosition.y
+    });
+  };
+
+  const handlePanelMouseMove = useCallback((e: MouseEvent) => {
+    if (!isDragging || !panelRef.current || !containerRef.current) return;
+
+    const containerRect = containerRef.current.getBoundingClientRect();
+    const panelWidth = 360; // Fixed panel width
+    const panelHeight = panelRef.current.offsetHeight;
+
+    // Calculate position relative to container
+    let newX = e.clientX - containerRect.left - dragStart.x;
+    let newY = e.clientY - containerRect.top - dragStart.y;
+
+    // Constrain to container bounds with padding
+    const padding = 20;
+    const maxX = containerRect.width - panelWidth - padding;
+    const maxY = containerRect.height - panelHeight - padding;
+
+    newX = Math.max(padding, Math.min(newX, maxX));
+    newY = Math.max(padding, Math.min(newY, maxY));
+
+    setPanelPosition({ x: newX, y: newY });
+  }, [isDragging, dragStart]);
+
+  const handlePanelMouseUp = useCallback(() => {
+    setIsDragging(false);
+  }, []);
+
+  // Add/remove mouse event listeners for dragging
+  useEffect(() => {
+    if (isDragging) {
+      window.addEventListener('mousemove', handlePanelMouseMove);
+      window.addEventListener('mouseup', handlePanelMouseUp);
+      return () => {
+        window.removeEventListener('mousemove', handlePanelMouseMove);
+        window.removeEventListener('mouseup', handlePanelMouseUp);
+      };
+    }
+  }, [isDragging, handlePanelMouseMove, handlePanelMouseUp]);
+
+  // Reset panel position when a new file is selected
+  useEffect(() => {
+    if (selectedNodeData && selectedNodeData.type === 'file' && containerRef.current) {
+      const containerRect = containerRef.current.getBoundingClientRect();
+      // Position at top-right with safe margins
+      setPanelPosition({
+        x: Math.max(20, containerRect.width - 400), // 360px panel + 40px margin
+        y: 40
+      });
+    }
+  }, [selectedNodeData]);
 
   const renderTree = useCallback(() => {
     if (!rootHierarchy || !svgRef.current || !containerRef.current) return;
@@ -222,11 +295,39 @@ const BeamlineExplorer: React.FC = () => {
       .attr("cursor", "pointer")
       .attr("opacity", 0);
 
-    // Node Box
-    nodeEnter.append("rect")
+    // Helper function to measure text width and truncate if needed
+    const measureAndTruncateText = (text: string, maxWidth: number, fontSize: number = 12): { displayText: string, width: number } => {
+      // Create temporary text element for measurement
+      const tempText = nodesLayer.append("text")
+        .attr("class", "text-[12px] font-bold")
+        .style("font-size", `${fontSize}px`)
+        .style("font-weight", "bold")
+        .text(text);
+
+      let bbox = (tempText.node() as SVGTextElement).getBBox();
+      let displayText = text;
+
+      // If text is too wide, truncate with ellipsis
+      if (bbox.width > maxWidth) {
+        let truncated = text;
+        while (bbox.width > maxWidth && truncated.length > 0) {
+          truncated = truncated.slice(0, -1);
+          tempText.text(truncated + '...');
+          bbox = (tempText.node() as SVGTextElement).getBBox();
+        }
+        displayText = truncated + '...';
+      }
+
+      const finalWidth = bbox.width;
+      tempText.remove();
+
+      return { displayText, width: finalWidth };
+    };
+
+    // Node Box - will be sized after text measurement
+    const nodeRects = nodeEnter.append("rect")
       .attr("x", -10)
       .attr("y", -24)
-      .attr("width", d => Math.max(150, d.data.name.length * 9 + 50))
       .attr("height", 48)
       .attr("rx", 16)
       .attr("ry", 16)
@@ -235,12 +336,25 @@ const BeamlineExplorer: React.FC = () => {
       .attr("stroke", "#e2e8f0")
       .attr("stroke-width", 2);
 
-    // Text Label
-    nodeEnter.append("text")
+    // Text Label with dynamic measurement
+    const nodeTexts = nodeEnter.append("text")
       .attr("dy", "0.35em")
       .attr("x", 25)
-      .attr("class", "text-[12px] font-bold select-none fill-slate-700 tracking-tight")
-      .text(d => d.data.name);
+      .attr("class", "text-[12px] font-bold select-none fill-slate-700 tracking-tight");
+
+    // Measure and set text content, then update box width
+    nodeTexts.each(function (d) {
+      const maxTextWidth = 250; // Maximum text width in pixels
+      const { displayText, width } = measureAndTruncateText(d.data.name, maxTextWidth);
+
+      d3.select(this).text(displayText);
+
+      // Update the corresponding rect width based on measured text
+      const boxWidth = Math.max(150, width + 60); // 60px for padding (25px left + 35px right for icon and spacing)
+      d3.select(this.parentNode as SVGGElement)
+        .select("rect.node-rect")
+        .attr("width", boxWidth);
+    });
 
     // Status/Icon Indicator
     nodeEnter.append("circle")
@@ -499,7 +613,14 @@ const BeamlineExplorer: React.FC = () => {
       {/* Sidebar Details Panel - Restricted only to files as per request */}
       {selectedNodeData && selectedNodeData.type === 'file' && (
         <div
-          className="absolute top-10 right-10 w-[360px] bg-white shadow-3xl rounded-[3rem] border-2 border-slate-50 p-8 z-20 animate-in slide-in-from-right duration-500 ease-out flex flex-col gap-6"
+          ref={panelRef}
+          className="absolute w-[360px] bg-white shadow-3xl rounded-[3rem] border-2 border-slate-50 p-8 z-20 flex flex-col gap-6 transition-shadow"
+          style={{
+            left: `${panelPosition.x}px`,
+            top: `${panelPosition.y}px`,
+            cursor: isDragging ? 'grabbing' : 'grab',
+          }}
+          onMouseDown={handlePanelMouseDown}
           onClick={(e) => e.stopPropagation()}
         >
           <div className="flex justify-between items-start">
@@ -522,7 +643,7 @@ const BeamlineExplorer: React.FC = () => {
             </button>
           </div>
 
-          <div className="space-y-12 overflow-y-auto max-h-[60vh] pr-4 custom-scrollbar">
+          <div className="space-y-12 overflow-y-auto max-h-[60vh] pr-4 custom-scrollbar" style={{ cursor: 'auto' }}>
             <div className="relative">
               <p className="text-[9px] font-black text-slate-300 uppercase tracking-[0.3em] mb-4">Overview</p>
               <div className="bg-slate-50 p-5 rounded-xl border border-slate-100 text-xs text-slate-600 leading-relaxed font-medium italic relative overflow-hidden group">

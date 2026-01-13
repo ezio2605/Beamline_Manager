@@ -556,16 +556,23 @@ const SyncEngine: React.FC<SyncEngineProps> = ({ onActiveWorkChange }) => {
                 <div className="flex items-start gap-4">
                   <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${activeResult.case === 'case2' ? 'bg-emerald-100 text-emerald-600' :
                     activeResult.case === 'case3' ? 'bg-indigo-100 text-indigo-600' :
-                      'bg-amber-100 text-amber-600'
+                      activeResult.case === 'case4' ? 'bg-red-100 text-red-600' :
+                        activeResult.case === 'case5' ? 'bg-purple-100 text-purple-600' :
+                          'bg-amber-100 text-amber-600'
                     }`}>
-                    <i className={`fa-solid ${activeResult.case === 'case2' ? 'fa-check' : 'fa-code-compare'
+                    <i className={`fa-solid ${activeResult.case === 'case2' ? 'fa-check' :
+                      activeResult.case === 'case4' ? 'fa-exclamation-triangle' :
+                        activeResult.case === 'case5' ? 'fa-link' :
+                          'fa-code-compare'
                       } text-xl`}></i>
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
                       <h3 className="font-bold text-slate-800 text-lg uppercase tracking-tight">
                         {activeResult.case === 'case1' ? 'UPDATE' :
-                          activeResult.case === 'case2' ? 'MATCH' : 'NEW'}
+                          activeResult.case === 'case2' ? 'MATCH' :
+                            activeResult.case === 'case3' ? 'NEW' :
+                              activeResult.case === 'case4' ? 'OUTDATED' : 'RELATED'}
                       </h3>
                       {/* <span className="px-2 py-0.5 bg-purple-100 text-purple-600 rounded text-[10px] font-bold uppercase tracking-wider">
                         RAG-Enhanced
