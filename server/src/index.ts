@@ -5,6 +5,8 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import filesRouter from './routes/files.js';
 import comparisonRouter from './routes/comparison.js';
+import standardStructureRouter from './routes/standardStructure.js';
+import semanticComparisonRouter from './routes/semanticComparison.js';
 import { CloudStorageService } from './services/CloudStorageService.js';
 import { FirestoreService } from './services/FirestoreService.js';
 
@@ -25,6 +27,8 @@ app.use(express.urlencoded({ extended: true }));
 // API Routes
 app.use('/api/files', filesRouter);
 app.use('/api/comparison', comparisonRouter);
+app.use('/api/standard-structure', standardStructureRouter);
+app.use('/api/semantic-comparison', semanticComparisonRouter);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

@@ -5,6 +5,8 @@ import Dashboard from './components/Dashboard';
 import BeamlineExplorer from './components/BeamlineExplorer';
 import StructuralAuditor from './components/StructuralAuditor';
 import SyncEngine from './components/SyncEngine';
+import StandardStructureManager from './components/StandardStructureManager';
+import SemanticComparisonDashboard from './components/SemanticComparisonDashboard';
 import { ViewState } from './types';
 
 const App: React.FC = () => {
@@ -42,6 +44,10 @@ const App: React.FC = () => {
         return <SyncEngine onActiveWorkChange={(hasWork) => {
           syncEngineHasActiveWorkRef.current = () => hasWork;
         }} />;
+      case ViewState.STANDARD_STRUCTURE:
+        return <StandardStructureManager />;
+      case ViewState.SEMANTIC_COMPARISON:
+        return <SemanticComparisonDashboard />;
       default:
         return <Dashboard onNavigate={handleViewChange} />;
     }

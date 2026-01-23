@@ -10,6 +10,12 @@ const COLLECTIONS = {
     COMPARISONS: 'comparisons',
     VECTORS: 'vectors',
     LOGS: 'logs',
+    // Semantic Comparison Collections
+    SEMANTIC_CHUNKS: 'semanticChunks',
+    SECTION_CLASSIFICATIONS: 'sectionClassifications',
+    MISSING_ELEMENTS_REPORTS: 'missingElementsReports',
+    VENDOR_PROFILES: 'vendorProfiles',
+    VENDOR_COMPARISONS: 'vendorComparisons',
 };
 
 export interface FileMetadata {
@@ -220,4 +226,193 @@ export class FirestoreService {
         // Firestore collections are created automatically
         console.log('✅ Firestore initialized');
     }
+
+    // ============================================
+    // Semantic Comparison Methods
+    // ============================================
+
+    /**
+     * Save semantic chunk
+     */
+    static async saveSemanticChunk(chunk: any): Promise<void> {
+        await firestore.collection(COLLECTIONS.SEMANTIC_CHUNKS).doc(chunk.id).set(chunk);
+    }
+
+    /**
+     * Get semantic chunks by document ID
+     */
+    static async getSemanticChunksByDocument(documentId: string): Promise<any[]> {
+        const snapshot = await firestore
+            .collection(COLLECTIONS.SEMANTIC_CHUNKS)
+            .where('documentId', '==', documentId)
+            .orderBy('chunkIndex', 'asc')
+            .get();
+
+        return snapshot.docs.map(doc => doc.data());
+    }
+
+    /**
+     * Save section classification
+     */
+    static async saveSectionClassification(classification: any): Promise<void> {
+        await firestore.collection(COLLECTIONS.SECTION_CLASSIFICATIONS).doc(classification.id).set(classification);
+    }
+
+    /**
+     * Get section classifications by document ID
+     */
+    static async getSectionClassificationsByDocument(documentId: string): Promise<any[]> {
+        const snapshot = await firestore
+            .collection(COLLECTIONS.SECTION_CLASSIFICATIONS)
+            .where('documentId', '==', documentId)
+            .get();
+
+        return snapshot.docs.map(doc => doc.data());
+    }
+
+    /**
+     * Update classification status
+     */
+    static async updateClassificationStatus(
+        classificationId: string,
+        status: 'pending' | 'approved' | 'rejected' | 'needs_review',
+        reviewedBy?: string
+    ): Promise<void> {
+        const updateData: any = {
+            status,
+            reviewedAt: new Date().toISOString(),
+        };
+
+        if (reviewedBy) {
+            updateData.reviewedBy = reviewedBy;
+        }
+
+        await firestore.collection(COLLECTIONS.SECTION_CLASSIFICATIONS).doc(classificationId).update(updateData);
+    }
+
+    /**
+     * Save missing elements report
+     */
+    static async saveMissingElementsReport(report: any): Promise<void> {
+        await firestore.collection(COLLECTIONS.MISSING_ELEMENTS_REPORTS).doc(report.id).set(report);
+    }
+
+    /**
+     * Get missing elements report by document ID
+     */
+    static async getMissingElementsReport(documentId: string): Promise<any | null> {
+        const snapshot = await firestore
+            .collection(COLLECTIONS.MISSING_ELEMENTS_REPORTS)
+            .where('documentId', '==', documentId)
+            .orderBy('generatedAt', 'desc')
+            .limit(1)
+            .get();
+
+        return snapshot.empty ? null : snapshot.docs[0].data();
+    }
+
+    /**
+     * Get all missing elements reports for a beamline
+     */
+    static async getMissingElementsReportsByBeamline(beamlineId: string): Promise<any[]> {
+        const snapshot = await firestore
+            .collection(COLLECTIONS.MISSING_ELEMENTS_REPORTS)
+            .where('beamlineId', '==', beamlineId)
+            .orderBy('generatedAt', 'desc')
+            .get();
+
+        return snapshot.docs.map(doc => doc.data());
+    }
+
+    /**
+     * Save vendor profile
+     */
+    static async saveVendorProfile(profile: any): Promise<void> {
+        await firestore.collection(COLLECTIONS.VENDOR_PROFILES).doc(profile.id).set(profile);
+    }
+
+    /**
+     * Get vendor profile by name
+     */
+    static async getVendorProfile(vendorName: string): Promise<any | null> {
+        const snapshot = await firestore
+            .collection(COLLECTIONS.VENDOR_PROFILES)
+            .where('name', '==', vendorName)
+            .limit(1)
+            .get();
+
+        return snapshot.empty ? null : snapshot.docs[0].data();
+    }
+
+    /**
+     * Get all vendor profiles
+     */
+    static async getAllVendorProfiles(): Promise<any[]> {
+        const snapshot = await firestore
+            .collection(COLLECTIONS.VENDOR_PROFILES)
+            .orderBy('name', 'asc')
+            .get();
+
+        return snapshot.docs.map(doc => doc.data());
+    }
+
+    /**
+     * Save vendor comparison
+     */
+    static async saveVendorComparison(comparison: any): Promise<void> {
+        await firestore.collection(COLLECTIONS.VENDOR_COMPARISONS).doc(comparison.id).set(comparison);
+    }
+
+    /**
+     * Get vendor comparison by ID
+     */
+    static async getVendorComparison(comparisonId: string): Promise<any | null> {
+        const doc = await firestore.collection(COLLECTIONS.VENDOR_COMPARISONS).doc(comparisonId).get();
+        return doc.exists ? doc.data() : null;
+    }
+
+    /**
+     * Get vendor comparisons for a beamline
+     */
+    static async getVendorComparisonsByBeamline(beamlineId: string): Promise<any[]> {
+        const snapshot = await firestore
+            .collection(COLLECTIONS.VENDOR_COMPARISONS)
+            .where('beamlineId', '==', beamlineId)
+            .orderBy('generatedAt', 'desc')
+            .get();
+
+        return snapshot.docs.map(doc => doc.data());
+    }
+
+    /**
+     * Delete all semantic data for a document
+     */
+    static async deleteSemanticDataForDocument(documentId: string): Promise<void> {
+        const batch = firestore.batch();
+
+        // Delete chunks
+        const chunksSnapshot = await firestore
+            .collection(COLLECTIONS.SEMANTIC_CHUNKS)
+            .where('documentId', '==', documentId)
+            .get();
+        chunksSnapshot.docs.forEach(doc => batch.delete(doc.ref));
+
+        // Delete classifications
+        const classificationsSnapshot = await firestore
+            .collection(COLLECTIONS.SECTION_CLASSIFICATIONS)
+            .where('documentId', '==', documentId)
+            .get();
+        classificationsSnapshot.docs.forEach(doc => batch.delete(doc.ref));
+
+        // Delete reports
+        const reportsSnapshot = await firestore
+            .collection(COLLECTIONS.MISSING_ELEMENTS_REPORTS)
+            .where('documentId', '==', documentId)
+            .get();
+        reportsSnapshot.docs.forEach(doc => batch.delete(doc.ref));
+
+        await batch.commit();
+        console.log(`✅ Deleted all semantic data for document ${documentId}`);
+    }
 }
+

@@ -64,6 +64,27 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onViewChange }) =
             <i className="fa-solid fa-arrows-rotate w-5"></i>
             {!isSidebarCollapsed && <span>Manual Comparison</span>}
           </button>
+
+          {/* Divider */}
+          <div className="border-t border-slate-700 my-2"></div>
+
+          <button
+            onClick={() => onViewChange(ViewState.SEMANTIC_COMPARISON)}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${activeView === ViewState.SEMANTIC_COMPARISON ? 'bg-indigo-600 shadow-lg' : 'hover:bg-slate-800'} ${isSidebarCollapsed ? 'justify-center' : ''}`}
+            title={isSidebarCollapsed ? 'Semantic Comparison' : ''}
+          >
+            <i className="fa-solid fa-brain w-5"></i>
+            {!isSidebarCollapsed && <span>Semantic Comparison</span>}
+          </button>
+
+          <button
+            onClick={() => onViewChange(ViewState.STANDARD_STRUCTURE)}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${activeView === ViewState.STANDARD_STRUCTURE ? 'bg-indigo-600 shadow-lg' : 'hover:bg-slate-800'} ${isSidebarCollapsed ? 'justify-center' : ''}`}
+            title={isSidebarCollapsed ? 'Standard Structure' : ''}
+          >
+            <i className="fa-solid fa-sitemap w-5"></i>
+            {!isSidebarCollapsed && <span>Standard Structure</span>}
+          </button>
         </nav>
 
         {/* Toggle Button */}

@@ -3,7 +3,9 @@ export enum ViewState {
   DASHBOARD = 'DASHBOARD',
   EXPLORER = 'EXPLORER',
   AUDITOR = 'AUDITOR',
-  SYNC = 'SYNC'
+  SYNC = 'SYNC',
+  STANDARD_STRUCTURE = 'STANDARD_STRUCTURE',
+  SEMANTIC_COMPARISON = 'SEMANTIC_COMPARISON'
 }
 
 export interface BeamlineNode {
@@ -189,3 +191,151 @@ export interface IndexingProgress {
   status: 'indexing' | 'completed' | 'error';
   error?: string;
 }
+
+// ============================================
+// Semantic Manual Comparison Types
+// ============================================
+
+// Standard Structure Types
+export interface StandardSection {
+  id: string;
+  name: string;
+  description: string;
+  category: string; // e.g., "Safety", "Operations", "Maintenance"
+  required: boolean;
+  subsections?: StandardSection[];
+  keywords?: string[]; // For LLM matching hints
+  examples?: string[]; // Example text for N-shot prompting
+}
+
+export interface StandardStructure {
+  id: string;
+  version: string;
+  name: string;
+  description: string;
+  sections: StandardSection[];
+  createdAt: string;
+  updatedAt: string;
+  isActive: boolean;
+}
+
+// Semantic Chunking Types
+export interface SemanticChunk {
+  id: string;
+  documentId: string;
+  beamlineId: string;
+  content: string;
+  chunkIndex: number;
+  metadata: {
+    heading?: string;
+    pageNumber?: number;
+    previousContext?: string;
+    nextContext?: string;
+  };
+  embedding?: number[];
+  createdAt: string;
+}
+
+// Classification Types
+export interface SectionMatch {
+  sectionId: string;
+  sectionName: string;
+  confidence: number;
+  reasoning: string;
+}
+
+export interface SectionClassification {
+  id: string;
+  chunkId: string;
+  documentId: string;
+  beamlineId: string;
+  standardStructureId: string;
+  matches: SectionMatch[];
+  status: 'pending' | 'approved' | 'rejected' | 'needs_review';
+  reviewedBy?: string;
+  reviewedAt?: string;
+  createdAt: string;
+}
+
+// Missing Elements Types
+export interface MissingSection {
+  sectionId: string;
+  sectionName: string;
+  category: string;
+  required: boolean;
+  recommendation: string;
+}
+
+export interface CategoryCoverage {
+  category: string;
+  total: number;
+  found: number;
+  percentage: number;
+}
+
+export interface MissingElementsReport {
+  id: string;
+  documentId: string;
+  beamlineId: string;
+  standardStructureId: string;
+  foundSections: string[];
+  missingSections: MissingSection[];
+  coveragePercentage: number;
+  categoryBreakdown: CategoryCoverage[];
+  generatedAt: string;
+}
+
+// Vendor Comparison Types
+export interface VendorProfile {
+  id: string;
+  name: string;
+  patterns: string[];
+  examples: Record<string, string[]>; // sectionId -> example texts
+  lastUpdated: string;
+}
+
+export interface SemanticDelta {
+  sectionId: string;
+  sectionName: string;
+  vendor1Content: string;
+  vendor2Content: string;
+  differences: string[];
+  semanticSimilarity: number;
+  addedInVendor2: string[];
+  removedFromVendor1: string[];
+  aiSummary: string;
+}
+
+export interface VendorComparison {
+  id: string;
+  document1Id: string;
+  document2Id: string;
+  vendor1: string;
+  vendor2: string;
+  beamlineId: string;
+  deltas: SemanticDelta[];
+  overallSimilarity: number;
+  generatedAt: string;
+}
+
+// UI State Types
+export interface SemanticComparisonState {
+  isProcessing: boolean;
+  currentDocument: string | null;
+  progress: {
+    totalChunks: number;
+    processedChunks: number;
+    currentChunk: string;
+  };
+  classifications: SectionClassification[];
+  missingElementsReport: MissingElementsReport | null;
+  error: string | null;
+}
+
+export interface StandardStructureState {
+  structures: StandardStructure[];
+  activeStructure: StandardStructure | null;
+  isLoading: boolean;
+  error: string | null;
+}
+
