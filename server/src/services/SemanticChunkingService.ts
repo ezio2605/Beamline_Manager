@@ -66,18 +66,31 @@ export class SemanticChunkingService {
         const now = new Date().toISOString();
 
         for (let i = 0; i < textChunks.length; i++) {
+            const previousContext = i > 0 ? textChunks[i - 1].content.substring(0, 100) : undefined;
+            const nextContext = i < textChunks.length - 1 ? textChunks[i + 1].content.substring(0, 100) : undefined;
+
+            // Build metadata object, excluding undefined values
+            const metadata: SemanticChunk['metadata'] = {};
+            if (textChunks[i].heading !== undefined) {
+                metadata.heading = textChunks[i].heading;
+            }
+            if (textChunks[i].pageNumber !== undefined) {
+                metadata.pageNumber = textChunks[i].pageNumber;
+            }
+            if (previousContext !== undefined) {
+                metadata.previousContext = previousContext;
+            }
+            if (nextContext !== undefined) {
+                metadata.nextContext = nextContext;
+            }
+
             const chunk: SemanticChunk = {
                 id: uuidv4(),
                 documentId,
                 beamlineId,
                 content: textChunks[i].content,
                 chunkIndex: i,
-                metadata: {
-                    heading: textChunks[i].heading,
-                    pageNumber: textChunks[i].pageNumber,
-                    previousContext: i > 0 ? textChunks[i - 1].content.substring(0, 100) : undefined,
-                    nextContext: i < textChunks.length - 1 ? textChunks[i + 1].content.substring(0, 100) : undefined,
-                },
+                metadata,
                 createdAt: now,
             };
 
@@ -334,13 +347,18 @@ export class SemanticChunkingService {
             const nextContext =
                 index < chunks.length - 1 ? chunks[index + 1].content.slice(0, windowSize) : undefined;
 
+            // Build new metadata, excluding undefined values
+            const newMetadata: SemanticChunk['metadata'] = { ...chunk.metadata };
+            if (previousContext !== undefined) {
+                newMetadata.previousContext = previousContext;
+            }
+            if (nextContext !== undefined) {
+                newMetadata.nextContext = nextContext;
+            }
+
             return {
                 ...chunk,
-                metadata: {
-                    ...chunk.metadata,
-                    previousContext,
-                    nextContext,
-                },
+                metadata: newMetadata,
             };
         });
     }
