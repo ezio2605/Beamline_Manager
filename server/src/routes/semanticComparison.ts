@@ -38,8 +38,15 @@ router.post('/upload', upload.single('file'), async (req: Request, res: Response
         const documentId = uuidv4();
         const filename = req.file.originalname;
 
-        // Upload file to Cloud Storage
-        const bucketName = process.env.GCS_BUCKET_NAME || '';
+        // Upload file to Cloud Storage - use vendor-specific buckets
+        let bucketName: string;
+        if (vendor === 'JASRI') {
+            bucketName = process.env.JASRI_BUCKET_NAME || 'jasri-uploads';
+        } else if (vendor === 'Nichigi') {
+            bucketName = process.env.NICHI_BUCKET_NAME || 'nichi-uploads';
+        } else {
+            bucketName = process.env.OTHERS_BUCKET_NAME || 'others-uploads';
+        }
         const storagePath = `semantic-comparison/${beamlineId}/${documentId}/${filename}`;
 
         await CloudStorageService.uploadFile(bucketName, req.file, storagePath);

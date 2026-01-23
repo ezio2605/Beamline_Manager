@@ -18,12 +18,20 @@ const SemanticComparisonDashboard: React.FC = () => {
     const [activeStructure, setActiveStructure] = useState<StandardStructure | null>(null);
     const [documents, setDocuments] = useState<UploadedDocument[]>([]);
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
-    const [beamlineId, setBeamlineId] = useState('');
+    const [beamlineId, setBeamlineId] = useState('BL01');
     const [vendor, setVendor] = useState('JASRI');
     const [isUploading, setIsUploading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [selectedDocId, setSelectedDocId] = useState<string | null>(null);
     const [report, setReport] = useState<any | null>(null);
+
+    // 26 beamlines list
+    const beamlines = [
+        'BL01', 'BL02', 'BL03', 'BL04', 'BL05', 'BL06', 'BL07', 'BL08',
+        'BL09', 'BL10', 'BL11', 'BL12', 'BL13', 'BL14', 'BL15', 'BL16',
+        'BL17', 'BL18', 'BL19', 'BL20', 'BL21', 'BL22', 'BL23', 'BL24',
+        'BL25', 'BL26'
+    ];
 
     useEffect(() => {
         loadActiveStructure();
@@ -192,14 +200,16 @@ const SemanticComparisonDashboard: React.FC = () => {
                 <h2 className="text-xl font-bold text-slate-800 mb-4">Upload Manual</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                     <div>
-                        <label className="block text-sm font-bold text-slate-700 mb-2">Beamline ID</label>
-                        <input
-                            type="text"
+                        <label className="block text-sm font-bold text-slate-700 mb-2">Beamline</label>
+                        <select
                             value={beamlineId}
                             onChange={(e) => setBeamlineId(e.target.value)}
-                            placeholder="e.g., BL01"
                             className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                        />
+                        >
+                            {beamlines.map(bl => (
+                                <option key={bl} value={bl}>{bl}</option>
+                            ))}
+                        </select>
                     </div>
                     <div>
                         <label className="block text-sm font-bold text-slate-700 mb-2">Vendor</label>
@@ -261,8 +271,8 @@ const SemanticComparisonDashboard: React.FC = () => {
                                     key={doc.documentId}
                                     onClick={() => doc.isComplete && loadReport(doc.documentId)}
                                     className={`bg-white rounded-lg border-2 p-4 transition-all ${selectedDocId === doc.documentId
-                                            ? 'border-indigo-500 bg-indigo-50'
-                                            : 'border-slate-200 hover:border-slate-300 cursor-pointer'
+                                        ? 'border-indigo-500 bg-indigo-50'
+                                        : 'border-slate-200 hover:border-slate-300 cursor-pointer'
                                         }`}
                                 >
                                     <div className="flex items-start justify-between mb-2">
@@ -319,8 +329,8 @@ const SemanticComparisonDashboard: React.FC = () => {
                                 <div className="flex items-center justify-between mb-2">
                                     <h3 className="text-lg font-bold text-slate-800">Overall Coverage</h3>
                                     <span className={`text-3xl font-extrabold ${report.report.coveragePercentage >= 90 ? 'text-green-600' :
-                                            report.report.coveragePercentage >= 70 ? 'text-yellow-600' :
-                                                'text-red-600'
+                                        report.report.coveragePercentage >= 70 ? 'text-yellow-600' :
+                                            'text-red-600'
                                         }`}>
                                         {report.report.coveragePercentage}%
                                     </span>
@@ -328,8 +338,8 @@ const SemanticComparisonDashboard: React.FC = () => {
                                 <div className="w-full bg-slate-200 rounded-full h-3">
                                     <div
                                         className={`h-3 rounded-full transition-all ${report.report.coveragePercentage >= 90 ? 'bg-green-600' :
-                                                report.report.coveragePercentage >= 70 ? 'bg-yellow-600' :
-                                                    'bg-red-600'
+                                            report.report.coveragePercentage >= 70 ? 'bg-yellow-600' :
+                                                'bg-red-600'
                                             }`}
                                         style={{ width: `${report.report.coveragePercentage}%` }}
                                     ></div>
@@ -346,8 +356,8 @@ const SemanticComparisonDashboard: React.FC = () => {
                                             <div className="flex items-center gap-2">
                                                 <span className="text-sm text-slate-600">{cat.found}/{cat.total}</span>
                                                 <span className={`text-sm font-bold ${cat.percentage >= 90 ? 'text-green-600' :
-                                                        cat.percentage >= 50 ? 'text-yellow-600' :
-                                                            'text-red-600'
+                                                    cat.percentage >= 50 ? 'text-yellow-600' :
+                                                        'text-red-600'
                                                     }`}>
                                                     {cat.percentage}%
                                                 </span>
@@ -366,8 +376,8 @@ const SemanticComparisonDashboard: React.FC = () => {
                                             <div
                                                 key={section.sectionId}
                                                 className={`p-3 rounded-lg border ${section.required
-                                                        ? 'bg-red-50 border-red-200'
-                                                        : 'bg-yellow-50 border-yellow-200'
+                                                    ? 'bg-red-50 border-red-200'
+                                                    : 'bg-yellow-50 border-yellow-200'
                                                     }`}
                                             >
                                                 <div className="flex items-start gap-2">
