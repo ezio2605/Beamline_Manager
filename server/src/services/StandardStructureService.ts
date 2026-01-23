@@ -55,7 +55,17 @@ export class StandardStructureService {
             isActive: false,
         };
 
-        await firestore.collection(COLLECTION_NAME).doc(id).set(structure);
+        // Convert to plain object for Firestore
+        await firestore.collection(COLLECTION_NAME).doc(id).set({
+            id: structure.id,
+            version: structure.version,
+            name: structure.name,
+            description: structure.description,
+            sections: structure.sections,
+            createdAt: structure.createdAt,
+            updatedAt: structure.updatedAt,
+            isActive: structure.isActive,
+        });
         console.log(`✅ Created standard structure: ${name} (v${structure.version})`);
 
         return structure;
@@ -116,16 +126,17 @@ export class StandardStructureService {
             throw new Error(`Standard structure not found: ${id}`);
         }
 
-        const updatedStructure = {
-            ...existingDoc.data(),
+        const updateData = {
             ...updates,
             updatedAt: new Date().toISOString(),
-        } as StandardStructure;
+        };
 
-        await firestore.collection(COLLECTION_NAME).doc(id).update(updatedStructure);
+        await firestore.collection(COLLECTION_NAME).doc(id).update(updateData);
         console.log(`✅ Updated standard structure: ${id}`);
 
-        return updatedStructure;
+        // Fetch and return the updated structure
+        const updatedDoc = await firestore.collection(COLLECTION_NAME).doc(id).get();
+        return updatedDoc.data() as StandardStructure;
     }
 
     /**
