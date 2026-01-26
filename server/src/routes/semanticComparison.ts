@@ -312,8 +312,8 @@ router.get('/:documentId/status', async (req: Request, res: Response) => {
     try {
         const { documentId } = req.params;
 
-        // Get vector documents (chunks) for this document
-        const vectorDocs = await FirestoreService.getVectorDocuments(documentId);
+        // Get vector documents by fileId (documentId is the fileId)
+        const vectorDocs = await FirestoreService.getVectorDocumentsByFileId(documentId);
         const report = await FirestoreService.getMissingElementsReport(documentId);
 
         const totalChunks = vectorDocs.length;
@@ -358,8 +358,8 @@ router.post('/:documentId/ask', async (req: Request, res: Response) => {
             });
         }
 
-        // Get document from vector store
-        const vectorDocs = await FirestoreService.getVectorDocuments(documentId);
+        // Get document from vector store by fileId
+        const vectorDocs = await FirestoreService.getVectorDocumentsByFileId(documentId);
 
         if (vectorDocs.length === 0) {
             return res.status(404).json({

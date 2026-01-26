@@ -157,6 +157,18 @@ export class FirestoreService {
     }
 
     /**
+     * Get all vector documents for a specific file
+     */
+    static async getVectorDocumentsByFileId(fileId: string): Promise<VectorDocument[]> {
+        const snapshot = await firestore
+            .collection(COLLECTIONS.VECTORS)
+            .where('fileId', '==', fileId)
+            .get();
+
+        return snapshot.docs.map(doc => doc.data() as VectorDocument);
+    }
+
+    /**
      * Delete vector documents for a file
      */
     static async deleteVectorDocuments(fileId: string): Promise<void> {
