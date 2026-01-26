@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import type { MissingElementsReport, StandardStructure } from '../types';
 
@@ -29,6 +29,7 @@ const SemanticComparisonDashboard: React.FC = () => {
     const [isAsking, setIsAsking] = useState(false);
     const [selectedDocs, setSelectedDocs] = useState<Set<string>>(new Set());
     const [isAnalyzingBatch, setIsAnalyzingBatch] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     // 26 beamlines list
     const beamlines = [
@@ -41,6 +42,27 @@ const SemanticComparisonDashboard: React.FC = () => {
     useEffect(() => {
         loadActiveStructure();
     }, []);
+
+    // Warn user before leaving if there's work in progress
+    useEffect(() => {
+        const hasInProgressWork = documents.length > 0;
+
+        const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+            if (hasInProgressWork) {
+                e.preventDefault();
+                e.returnValue = 'You have uploads or analysis in progress. Are you sure you want to leave?';
+                return e.returnValue;
+            }
+        };
+
+        if (hasInProgressWork) {
+            window.addEventListener('beforeunload', handleBeforeUnload);
+        }
+
+        return () => {
+            window.removeEventListener('beforeunload', handleBeforeUnload);
+        };
+    }, [isUploading, isAnalyzingBatch, documents]);
 
     useEffect(() => {
         // Poll for document status
@@ -106,6 +128,10 @@ const SemanticComparisonDashboard: React.FC = () => {
 
             setDocuments(prev => [...prev, newDoc]);
             setSelectedFile(null);
+            // Reset file input to allow selecting another file
+            if (fileInputRef.current) {
+                fileInputRef.current.value = '';
+            }
             // Don't clear beamlineId to allow multiple uploads for same beamline
         } catch (err: any) {
             setError(err.response?.data?.error || 'Failed to upload file');
@@ -195,6 +221,8 @@ const SemanticComparisonDashboard: React.FC = () => {
     const loadReport = async (documentId: string) => {
         try {
             const res = await axios.get(`${API_BASE}/semantic-comparison/${documentId}/missing-elements`);
+            console.log('📄 Loaded report:', res.data.data);
+            console.log('📋 Recommendations:', res.data.data.recommendations);
             setReport(res.data.data);
             setSelectedDocId(documentId);
         } catch (err: any) {
@@ -324,6 +352,7 @@ const SemanticComparisonDashboard: React.FC = () => {
                 <div className="mb-4">
                     <label className="block text-sm font-bold text-slate-700 mb-2">Manual File (PDF/DOCX)</label>
                     <input
+                        ref={fileInputRef}
                         type="file"
                         accept=".pdf,.docx,.doc"
                         onChange={handleFileSelect}
@@ -468,7 +497,7 @@ const SemanticComparisonDashboard: React.FC = () => {
 
                 {/* Report Display */}
                 <div>
-                    <h2 className="text-xl font-bold text-slate-800 mb-4">Missing Elements Report</h2>
+                    <h2 className="text-xl font-bold text-slate-800 mb-4">Report</h2>
                     {report ? (
                         <div className="bg-white rounded-xl border border-slate-200 p-6">
                             {/* Coverage Overview */}
@@ -573,11 +602,11 @@ const SemanticComparisonDashboard: React.FC = () => {
                     <div className="mt-8 bg-white rounded-xl border border-slate-200 p-6">
                         <h2 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
                             <i className="fa-solid fa-comments text-indigo-600"></i>
-                            Ask Questions About This Document
+                            Ask Questions
                         </h2>
-                        <p className="text-sm text-slate-600 mb-4">
+                        {/* <p className="text-sm text-slate-600 mb-4">
                             Ask questions about the manual content and get AI-powered answers based on the document.
-                        </p>
+                        </p> */}
 
                         {/* Chat History */}
                         {chatHistory.length > 0 && (

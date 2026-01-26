@@ -298,7 +298,8 @@ function parseAIAnalysis(
         enhancedInsights += `\n\n**RAG Analysis**: Found ${similarDocs.length} similar document(s) with top similarity of ${(similarDocs[0].score * 100).toFixed(1)}%.`;
     }
 
-    return {
+
+    const report = {
         id: `${documentId}_report`,
         documentId,
         beamlineId,
@@ -311,6 +312,10 @@ function parseAIAnalysis(
         recommendations,
         generatedAt: new Date().toISOString(),
     };
+
+    console.log(`📊 Parsed ${recommendations.length} recommendations:`, recommendations);
+
+    return report;
 }
 
 /**
