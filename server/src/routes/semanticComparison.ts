@@ -246,7 +246,12 @@ function parseAIAnalysis(
     const recommendations = recsMatch
         ? recsMatch[1].trim().split('\n')
             .filter(s => s.trim())
-            .map(s => s.trim().replace(/^[-*•]\s*/, '')) // Remove bullet points
+            .map(s => s.trim()
+                .replace(/^\d+\.\s*/, '')      // Remove numbered lists (1. 2. 3.)
+                .replace(/^[-*•]\s*/, '')      // Remove bullet points
+                .replace(/\*\*/g, '')          // Remove bold markdown **
+                .replace(/\*/g, '')            // Remove asterisks
+            )
             .filter(s => s.length > 0)
         : [];
 

@@ -14,7 +14,11 @@ interface UploadedDocument {
     progress: number;
 }
 
-const SemanticComparisonDashboard: React.FC = () => {
+interface SemanticComparisonDashboardProps {
+    onActiveDocumentsChange?: (hasDocuments: boolean) => void;
+}
+
+const SemanticComparisonDashboard: React.FC<SemanticComparisonDashboardProps> = ({ onActiveDocumentsChange }) => {
     const [activeStructure, setActiveStructure] = useState<StandardStructure | null>(null);
     const [documents, setDocuments] = useState<UploadedDocument[]>([]);
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -44,23 +48,12 @@ const SemanticComparisonDashboard: React.FC = () => {
         loadActiveStructure();
     }, []);
 
-    // Warn user before leaving if there's work in progress
+    // Notify parent component when documents state changes
     useEffect(() => {
-        const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-            if (documents.length > 0) {
-                // Modern browsers require returnValue to be set to empty string
-                // They will show their own generic message, not custom text
-                e.preventDefault();
-                e.returnValue = 'You have documents in your session. Are you sure you want to leave?';
-                return e.returnValue;
-            }
-        };
-
-        window.addEventListener('beforeunload', handleBeforeUnload);
-        return () => {
-            window.removeEventListener('beforeunload', handleBeforeUnload);
-        };
-    }, [documents]);
+        if (onActiveDocumentsChange) {
+            onActiveDocumentsChange(documents.length > 0);
+        }
+    }, [documents, onActiveDocumentsChange]);
 
     useEffect(() => {
         // Poll for document status
@@ -352,16 +345,23 @@ const SemanticComparisonDashboard: React.FC = () => {
                 </div>
             )}
 
-            {/* Upload Section */}
-            <div className="mb-8 bg-white rounded-xl border border-slate-200 p-6">
-                <h2 className="text-xl font-bold text-slate-800 mb-4">Upload Manual</h2>
+            {/* Upload Section - Always Visible */}
+            <div className="mb-8 bg-gradient-to-br from-indigo-50 to-white rounded-xl border-2 border-indigo-200 p-6 shadow-sm">
+                <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-xl font-bold text-slate-800">Upload Manual</h2>
+                    {documents.length > 0 && (
+                        <span className="text-xs text-indigo-600 font-medium bg-indigo-100 px-3 py-1 rounded-full">
+                            💡 You can upload multiple files
+                        </span>
+                    )}
+                </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                     <div>
                         <label className="block text-sm font-bold text-slate-700 mb-2">Beamline</label>
                         <select
                             value={beamlineId}
                             onChange={(e) => setBeamlineId(e.target.value)}
-                            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
                         >
                             {beamlines.map(bl => (
                                 <option key={bl} value={bl}>{bl}</option>
@@ -373,7 +373,7 @@ const SemanticComparisonDashboard: React.FC = () => {
                         <select
                             value={vendor}
                             onChange={(e) => setVendor(e.target.value)}
-                            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
                         >
                             <option value="JASRI">JASRI</option>
                             <option value="Nichigi">日技</option>
@@ -389,7 +389,7 @@ const SemanticComparisonDashboard: React.FC = () => {
                         accept=".pdf,.docx,.doc"
                         onChange={handleFileSelect}
                         onClick={handleFileInputClick}
-                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
                     />
                     {selectedFile && (
                         <p className="text-sm text-slate-600 mt-2">Selected: {selectedFile.name}</p>
@@ -417,26 +417,36 @@ const SemanticComparisonDashboard: React.FC = () => {
             {/* Documents List */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div>
-                    <div className="flex items-center justify-between mb-4">
-                        <h2 className="text-xl font-bold text-slate-800">Uploaded Documents</h2>
+                    <div className="flex flex-col gap-2 mb-4">
+                        <div className="flex items-center justify-between">
+                            <h2 className="text-xl font-bold text-slate-800">Uploaded Documents</h2>
+                            {documents.some(d => !d.isComplete && d.progress === 0) && (
+                                <button
+                                    onClick={analyzeBatch}
+                                    disabled={isAnalyzingBatch || selectedDocs.size === 0}
+                                    className="px-4 py-2 bg-green-600 text-white text-sm rounded-lg font-bold hover:bg-green-700 disabled:bg-slate-300 disabled:cursor-not-allowed transition-colors flex items-center gap-2 shadow-sm"
+                                >
+                                    {isAnalyzingBatch ? (
+                                        <>
+                                            <i className="fa-solid fa-spinner fa-spin"></i>
+                                            Analyzing...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <i className="fa-solid fa-play-circle"></i>
+                                            Analyze Selected ({selectedDocs.size})
+                                        </>
+                                    )}
+                                </button>
+                            )}
+                        </div>
                         {documents.some(d => !d.isComplete && d.progress === 0) && (
-                            <button
-                                onClick={analyzeBatch}
-                                disabled={isAnalyzingBatch || selectedDocs.size === 0}
-                                className="px-4 py-2 bg-green-600 text-white text-sm rounded-lg font-bold hover:bg-green-700 disabled:bg-slate-300 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
-                            >
-                                {isAnalyzingBatch ? (
-                                    <>
-                                        <i className="fa-solid fa-spinner fa-spin"></i>
-                                        Analyzing...
-                                    </>
-                                ) : (
-                                    <>
-                                        <i className="fa-solid fa-play-circle"></i>
-                                        Analyze Selected ({selectedDocs.size})
-                                    </>
-                                )}
-                            </button>
+                            <div className="bg-green-50 border border-green-200 rounded-lg px-3 py-2 flex items-center gap-2">
+                                <i className="fa-solid fa-info-circle text-green-600 text-sm"></i>
+                                {/* <p className="text-xs text-green-800">
+                                    <strong>Tip:</strong> Select multiple documents using checkboxes to analyze them together
+                                </p> */}
+                            </div>
                         )}
                     </div>
                     {documents.length === 0 ? (
@@ -456,13 +466,16 @@ const SemanticComparisonDashboard: React.FC = () => {
                                 >
                                     <div className="flex items-start gap-3 mb-2">
                                         {!doc.isComplete && doc.progress === 0 && (
-                                            <input
-                                                type="checkbox"
-                                                checked={selectedDocs.has(doc.documentId)}
-                                                onChange={() => toggleDocSelection(doc.documentId)}
-                                                className="mt-1 w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500"
-                                                onClick={(e) => e.stopPropagation()}
-                                            />
+                                            <div className="flex items-center justify-center pt-1">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={selectedDocs.has(doc.documentId)}
+                                                    onChange={() => toggleDocSelection(doc.documentId)}
+                                                    className="w-5 h-5 text-green-600 border-2 border-slate-400 rounded focus:ring-2 focus:ring-green-500 cursor-pointer hover:border-green-500 transition-colors"
+                                                    onClick={(e) => e.stopPropagation()}
+                                                    title="Select for batch analysis"
+                                                />
+                                            </div>
                                         )}
                                         <div
                                             className="flex-1 cursor-pointer"
@@ -611,9 +624,22 @@ const SemanticComparisonDashboard: React.FC = () => {
                                 <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
                                     <h3 className="text-sm font-bold text-blue-900 mb-2">Recommendations</h3>
                                     <ul className="space-y-1">
-                                        {report.report.recommendations.map((rec: string, idx: number) => (
-                                            <li key={idx} className="text-sm text-blue-800">• {rec}</li>
-                                        ))}
+                                        {report.report.recommendations.map((rec: string, idx: number) => {
+                                            // Clean up the recommendation text
+                                            const cleanRec = rec
+                                                .replace(/^\d+\.\s*/, '') // Remove numbered lists (1. 2. 3.)
+                                                .replace(/^[-*•]\s*/, '') // Remove bullet points
+                                                .replace(/\*\*/g, '')     // Remove bold markdown **
+                                                .replace(/\*/g, '')       // Remove asterisks
+                                                .trim();
+
+                                            return cleanRec ? (
+                                                <li key={idx} className="text-sm text-blue-800 flex items-start gap-2">
+                                                    <span className="text-blue-600 mt-0.5">•</span>
+                                                    <span className="flex-1">{cleanRec}</span>
+                                                </li>
+                                            ) : null;
+                                        })}
                                     </ul>
                                 </div>
                             )}

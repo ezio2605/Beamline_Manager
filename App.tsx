@@ -12,6 +12,7 @@ import { ViewState } from './types';
 const App: React.FC = () => {
   const [activeView, setActiveView] = useState<ViewState>(ViewState.DASHBOARD);
   const syncEngineHasActiveWorkRef = useRef<() => boolean>(() => false);
+  const semanticComparisonHasDocumentsRef = useRef<() => boolean>(() => false);
 
   const handleViewChange = (newView: ViewState) => {
     // If leaving Sync Machine, check if there's active work
@@ -21,6 +22,21 @@ const App: React.FC = () => {
       if (hasActiveWork) {
         const confirmed = window.confirm(
           'Are you sure you want to leave? All progress will be lost and you will need to start over.'
+        );
+
+        if (!confirmed) {
+          return; // Don't change view
+        }
+      }
+    }
+
+    // If leaving Semantic Comparison, check if there are documents
+    if (activeView === ViewState.SEMANTIC_COMPARISON && newView !== ViewState.SEMANTIC_COMPARISON) {
+      const hasDocuments = semanticComparisonHasDocumentsRef.current();
+
+      if (hasDocuments) {
+        const confirmed = window.confirm(
+          'You have documents in your session. Are you sure you want to leave? Your uploaded documents and analysis will be lost.'
         );
 
         if (!confirmed) {
@@ -47,7 +63,9 @@ const App: React.FC = () => {
       case ViewState.STANDARD_STRUCTURE:
         return <StandardStructureManager />;
       case ViewState.SEMANTIC_COMPARISON:
-        return <SemanticComparisonDashboard />;
+        return <SemanticComparisonDashboard onActiveDocumentsChange={(hasDocuments) => {
+          semanticComparisonHasDocumentsRef.current = () => hasDocuments;
+        }} />;
       default:
         return <Dashboard onNavigate={handleViewChange} />;
     }
