@@ -163,8 +163,10 @@ const SemanticComparisonDashboard: React.FC<SemanticComparisonDashboardProps> = 
                     : doc
             ));
 
-            // Trigger analysis (the upload endpoint already started it, but we can re-trigger if needed)
-            // For now, just start polling for status
+            // Trigger analysis via the new endpoint
+            await axios.post(`${API_BASE}/semantic-comparison/${documentId}/analyze`);
+
+            // Start polling for status
             const pollInterval = setInterval(async () => {
                 const status = await checkDocumentStatus(documentId);
                 if (status?.isComplete) {

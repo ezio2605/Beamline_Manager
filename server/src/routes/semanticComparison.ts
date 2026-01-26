@@ -89,22 +89,77 @@ router.post('/upload', upload.single('file'), async (req: Request, res: Response
         const totalChunks = processedDoc.chunks.length;
         console.log(`✅ Indexed ${totalChunks} chunks for document ${documentId}`);
 
+        // Don't auto-start analysis - let user trigger it manually
+        // This allows uploading multiple files before analyzing
+
+        res.status(200).json({
+            success: true,
+            data: {
+                documentId,
+                filename,
+                beamlineId,
+                totalChunks,
+                status: 'uploaded',
+            },
+            message: 'Document uploaded successfully. Ready for analysis.',
+        });
+    } catch (error) {
+        console.error('Error uploading document:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to upload document',
+        });
+    }
+});
+
+/**
+ * POST /api/semantic-comparison/:documentId/analyze
+ * Manually trigger analysis for an uploaded document
+ */
+router.post('/:documentId/analyze', async (req: Request, res: Response) => {
+    try {
+        const { documentId } = req.params;
+
+        // Get vector documents to retrieve metadata
+        const vectorDocs = await FirestoreService.getVectorDocumentsByFileId(documentId);
+
+        if (vectorDocs.length === 0) {
+            return res.status(404).json({
+                success: false,
+                error: 'Document not found',
+            });
+        }
+
+        const beamlineId = vectorDocs[0].beamlineId;
+        const vendor = vectorDocs[0].metadata?.vendor || 'Unknown';
+
+        // Get active standard structure
+        const standardStructure = await StandardStructureService.getActiveStructure();
+        if (!standardStructure) {
+            return res.status(400).json({
+                success: false,
+                error: 'No active standard structure found',
+            });
+        }
+
+        // Reconstruct document content from chunks
+        const documentContent = vectorDocs.map(doc => doc.content).join('\n\n');
+
         // Start RAG-based analysis process (async)
-        // We'll return immediately and let the client poll for status
         setImmediate(async () => {
             try {
                 console.log(`🤖 Starting RAG-based analysis for document ${documentId}...`);
 
                 // Use RAG to analyze document against standard structure
                 const analysisPrompt = buildAnalysisPrompt(
-                    processedDoc.content,
+                    documentContent,
                     standardStructure,
                     vendor
                 );
 
                 // Get similar documents from vector store for context
                 const similarDocs = await VectorSearchService.searchSimilar(
-                    processedDoc.content.substring(0, 2000), // Use first 2000 chars as query
+                    documentContent.substring(0, 2000), // Use first 2000 chars as query
                     beamlineId,
                     3
                 );
@@ -133,20 +188,13 @@ router.post('/upload', upload.single('file'), async (req: Request, res: Response
 
         res.status(202).json({
             success: true,
-            data: {
-                documentId,
-                filename,
-                beamlineId,
-                totalChunks,
-                status: 'processing',
-            },
-            message: 'Document uploaded and RAG-based analysis started',
+            message: 'Analysis started',
         });
     } catch (error) {
-        console.error('Error uploading document:', error);
+        console.error('Error starting analysis:', error);
         res.status(500).json({
             success: false,
-            error: 'Failed to upload document',
+            error: 'Failed to start analysis',
         });
     }
 });
