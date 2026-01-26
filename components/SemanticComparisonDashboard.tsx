@@ -9,9 +9,7 @@ interface UploadedDocument {
     filename: string;
     beamlineId: string;
     totalChunks: number;
-    processedChunks: number;
-    isComplete: boolean;
-    progress: number;
+    status: 'uploaded' | 'analyzing' | 'complete';
 }
 
 interface SemanticComparisonDashboardProps {
@@ -56,10 +54,10 @@ const SemanticComparisonDashboard: React.FC<SemanticComparisonDashboardProps> = 
     }, [documents, onActiveDocumentsChange]);
 
     useEffect(() => {
-        // Poll for document status
+        // Poll for document status only for analyzing documents
         const interval = setInterval(() => {
             documents.forEach(doc => {
-                if (!doc.isComplete) {
+                if (doc.status === 'analyzing') {
                     checkDocumentStatus(doc.documentId);
                 }
             });
@@ -123,12 +121,12 @@ const SemanticComparisonDashboard: React.FC<SemanticComparisonDashboardProps> = 
                 filename: res.data.data.filename,
                 beamlineId: res.data.data.beamlineId,
                 totalChunks: res.data.data.totalChunks,
-                processedChunks: 0,
-                isComplete: false,
-                progress: 0
+                status: 'uploaded'
             };
 
             setDocuments(prev => [...prev, newDoc]);
+            // Auto-select newly uploaded document for analysis
+            setSelectedDocs(prev => new Set([...prev, newDoc.documentId]));
 
             // Show success message
             setSuccessMessage(`✓ ${selectedFile.name} uploaded successfully! You can upload another file.`);
@@ -159,7 +157,7 @@ const SemanticComparisonDashboard: React.FC<SemanticComparisonDashboardProps> = 
             // Update document status to show it's being analyzed
             setDocuments(prev => prev.map(doc =>
                 doc.documentId === documentId
-                    ? { ...doc, progress: 50 }
+                    ? { ...doc, status: 'analyzing' }
                     : doc
             ));
 
@@ -217,15 +215,15 @@ const SemanticComparisonDashboard: React.FC<SemanticComparisonDashboardProps> = 
     const checkDocumentStatus = async (documentId: string) => {
         try {
             const res = await axios.get(`${API_BASE}/semantic-comparison/${documentId}/status`);
-            const status = res.data.data;
+            const statusData = res.data.data;
 
             setDocuments(prev => prev.map(doc =>
                 doc.documentId === documentId
-                    ? { ...doc, processedChunks: status.processedChunks, isComplete: status.isComplete, progress: status.progress }
+                    ? { ...doc, status: statusData.isComplete ? 'complete' : doc.status }
                     : doc
             ));
 
-            return status;
+            return statusData;
         } catch (err) {
             console.error('Error checking status:', err);
             return null;
@@ -422,7 +420,7 @@ const SemanticComparisonDashboard: React.FC<SemanticComparisonDashboardProps> = 
                     <div className="flex flex-col gap-2 mb-4">
                         <div className="flex items-center justify-between">
                             <h2 className="text-xl font-bold text-slate-800">Uploaded Documents</h2>
-                            {documents.some(d => !d.isComplete && d.progress === 0) && (
+                            {documents.some(d => d.status === 'uploaded') && (
                                 <button
                                     onClick={analyzeBatch}
                                     disabled={isAnalyzingBatch || selectedDocs.size === 0}
@@ -442,12 +440,12 @@ const SemanticComparisonDashboard: React.FC<SemanticComparisonDashboardProps> = 
                                 </button>
                             )}
                         </div>
-                        {documents.some(d => !d.isComplete && d.progress === 0) && (
-                            <div className="bg-green-50 border border-green-200 rounded-lg px-3 py-2 flex items-center gap-2">
-                                <i className="fa-solid fa-info-circle text-green-600 text-sm"></i>
-                                {/* <p className="text-xs text-green-800">
-                                    <strong>Tip:</strong> Select multiple documents using checkboxes to analyze them together
-                                </p> */}
+                        {documents.some(d => d.status === 'uploaded') && (
+                            <div className="bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 flex items-center gap-2">
+                                <i className="fa-solid fa-info-circle text-blue-600 text-sm"></i>
+                                <p className="text-xs text-blue-800">
+                                    <strong>Tip:</strong> Select documents using checkboxes and click "Analyze Selected" to process them
+                                </p>
                             </div>
                         )}
                     </div>
@@ -467,7 +465,7 @@ const SemanticComparisonDashboard: React.FC<SemanticComparisonDashboardProps> = 
                                         }`}
                                 >
                                     <div className="flex items-start gap-3 mb-2">
-                                        {!doc.isComplete && doc.progress === 0 && (
+                                        {doc.status === 'uploaded' && (
                                             <div className="flex items-center justify-center pt-1">
                                                 <input
                                                     type="checkbox"
@@ -481,7 +479,7 @@ const SemanticComparisonDashboard: React.FC<SemanticComparisonDashboardProps> = 
                                         )}
                                         <div
                                             className="flex-1 cursor-pointer"
-                                            onClick={() => doc.isComplete && loadReport(doc.documentId)}
+                                            onClick={() => doc.status === 'complete' && loadReport(doc.documentId)}
                                         >
                                             <div className="flex items-start justify-between mb-2">
                                                 <div className="flex-1">
@@ -489,18 +487,7 @@ const SemanticComparisonDashboard: React.FC<SemanticComparisonDashboardProps> = 
                                                     <p className="text-sm text-slate-600">{doc.beamlineId}</p>
                                                 </div>
                                                 <div className="flex items-center gap-2">
-                                                    {!doc.isComplete && doc.progress === 0 && (
-                                                        <button
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                analyzeDocument(doc.documentId);
-                                                            }}
-                                                            className="px-3 py-1 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition-colors flex items-center gap-1"
-                                                        >
-                                                            <i className="fa-solid fa-play"></i>
-                                                            Analyze
-                                                        </button>
-                                                    )}
+
                                                     <button
                                                         onClick={(e) => {
                                                             e.stopPropagation();
@@ -513,27 +500,22 @@ const SemanticComparisonDashboard: React.FC<SemanticComparisonDashboardProps> = 
                                                 </div>
                                             </div>
 
-                                            {!doc.isComplete ? (
-                                                <div>
-                                                    <div className="flex items-center gap-2 mb-2">
-                                                        <i className="fa-solid fa-spinner fa-spin text-indigo-600"></i>
-                                                        <span className="text-sm text-slate-600">Processing... {doc.progress}%</span>
-                                                    </div>
-                                                    <div className="w-full bg-slate-200 rounded-full h-2">
-                                                        <div
-                                                            className="bg-indigo-600 h-2 rounded-full transition-all"
-                                                            style={{ width: `${doc.progress}%` }}
-                                                        ></div>
-                                                    </div>
-                                                    <p className="text-xs text-slate-500 mt-1">
-                                                        {doc.processedChunks} / {doc.totalChunks} chunks processed
-                                                    </p>
+                                            {doc.status === 'uploaded' && (
+                                                <span className="px-3 py-1 bg-blue-100 text-blue-700 text-xs font-bold rounded-full">
+                                                    Ready to Analyze
+                                                </span>
+                                            )}
+                                            {doc.status === 'analyzing' && (
+                                                <div className="mt-2 flex items-center gap-2 text-sm text-slate-600">
+                                                    <i className="fa-solid fa-robot text-indigo-600"></i>
+                                                    <span>AI is analyzing the document against the standard structure...</span>
                                                 </div>
-                                            ) : (
-                                                <div className="flex items-center gap-2 text-green-600">
+                                            )}
+                                            {doc.status === 'complete' && (
+                                                <span className="px-3 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-full flex items-center gap-1">
                                                     <i className="fa-solid fa-check-circle"></i>
-                                                    <span className="text-sm font-bold">Analysis Complete</span>
-                                                </div>
+                                                    Complete
+                                                </span>
                                             )}
                                         </div>
                                     </div>
