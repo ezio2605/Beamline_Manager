@@ -466,7 +466,7 @@ export class FirestoreService {
     static async getCombinedReport(documentIds: string[]): Promise<any | null> {
         // Sort document IDs to ensure consistent lookup
         const sortedIds = [...documentIds].sort();
-        const combinedId = `combined_${sortedIds.join('_')}`;
+        const combinedId = `combined_${sortedIds.join('_')}_report`;
 
         const doc = await firestore
             .collection(COLLECTIONS.MISSING_ELEMENTS_REPORTS)
