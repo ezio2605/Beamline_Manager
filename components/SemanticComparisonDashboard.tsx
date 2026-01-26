@@ -48,18 +48,18 @@ const SemanticComparisonDashboard: React.FC = () => {
     useEffect(() => {
         const handleBeforeUnload = (e: BeforeUnloadEvent) => {
             if (documents.length > 0) {
+                // Modern browsers require returnValue to be set to empty string
+                // They will show their own generic message, not custom text
                 e.preventDefault();
                 e.returnValue = 'You have documents in your session. Are you sure you want to leave?';
                 return e.returnValue;
             }
         };
 
-        if (documents.length > 0) {
-            window.addEventListener('beforeunload', handleBeforeUnload);
-            return () => {
-                window.removeEventListener('beforeunload', handleBeforeUnload);
-            };
-        }
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        return () => {
+            window.removeEventListener('beforeunload', handleBeforeUnload);
+        };
     }, [documents]);
 
     useEffect(() => {
@@ -85,8 +85,18 @@ const SemanticComparisonDashboard: React.FC = () => {
     };
 
     const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files[0]) {
+        if (e.target.files && e.target.files.length > 0) {
             setSelectedFile(e.target.files[0]);
+        } else {
+            // User cancelled file selection
+            setSelectedFile(null);
+        }
+    };
+
+    const handleFileInputClick = () => {
+        // Clear the input value to ensure onChange fires even for the same file
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
         }
     };
 
@@ -378,6 +388,7 @@ const SemanticComparisonDashboard: React.FC = () => {
                         type="file"
                         accept=".pdf,.docx,.doc"
                         onChange={handleFileSelect}
+                        onClick={handleFileInputClick}
                         className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     />
                     {selectedFile && (
