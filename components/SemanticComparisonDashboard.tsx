@@ -24,6 +24,9 @@ const SemanticComparisonDashboard: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
     const [selectedDocId, setSelectedDocId] = useState<string | null>(null);
     const [report, setReport] = useState<any | null>(null);
+    const [question, setQuestion] = useState('');
+    const [chatHistory, setChatHistory] = useState<Array<{ question: string, answer: string, sources?: any[] }>>([]);
+    const [isAsking, setIsAsking] = useState(false);
 
     // 26 beamlines list
     const beamlines = [
@@ -148,9 +151,34 @@ const SemanticComparisonDashboard: React.FC = () => {
             if (selectedDocId === documentId) {
                 setSelectedDocId(null);
                 setReport(null);
+                setChatHistory([]);
             }
         } catch (err) {
             setError('Failed to delete document');
+        }
+    };
+
+    const askQuestion = async () => {
+        if (!question.trim() || !selectedDocId) return;
+
+        try {
+            setIsAsking(true);
+            setError(null);
+
+            const res = await axios.post(`${API_BASE}/semantic-comparison/${selectedDocId}/ask`, {
+                question: question.trim()
+            });
+
+            setChatHistory(prev => [...prev, {
+                question: question.trim(),
+                answer: res.data.data.answer,
+                sources: res.data.data.sources
+            }]);
+            setQuestion('');
+        } catch (err: any) {
+            setError(err.response?.data?.error || 'Failed to get answer');
+        } finally {
+            setIsAsking(false);
         }
     };
 
@@ -219,7 +247,7 @@ const SemanticComparisonDashboard: React.FC = () => {
                             className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                         >
                             <option value="JASRI">JASRI</option>
-                            <option value="Nichigi">Nichigi (日技)</option>
+                            <option value="Nichigi">日技</option>
                             <option value="Other">Other</option>
                         </select>
                     </div>
@@ -419,6 +447,86 @@ const SemanticComparisonDashboard: React.FC = () => {
                     )}
                 </div>
             </div>
+
+            {/* Q&A Interface (NotebookLM-style) */}
+            {selectedDocId && report && (
+                <div className="mt-8 bg-white rounded-xl border border-slate-200 p-6">
+                    <h2 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
+                        <i className="fa-solid fa-comments text-indigo-600"></i>
+                        Ask Questions About This Document
+                    </h2>
+                    <p className="text-sm text-slate-600 mb-4">
+                        Ask questions about the manual content and get AI-powered answers based on the document.
+                    </p>
+
+                    {/* Chat History */}
+                    {chatHistory.length > 0 && (
+                        <div className="mb-4 space-y-4 max-h-96 overflow-y-auto">
+                            {chatHistory.map((chat, idx) => (
+                                <div key={idx} className="space-y-2">
+                                    {/* Question */}
+                                    <div className="flex justify-end">
+                                        <div className="bg-indigo-100 text-indigo-900 rounded-lg px-4 py-2 max-w-2xl">
+                                            <p className="text-sm font-bold mb-1">You asked:</p>
+                                            <p className="text-sm">{chat.question}</p>
+                                        </div>
+                                    </div>
+                                    {/* Answer */}
+                                    <div className="flex justify-start">
+                                        <div className="bg-slate-100 text-slate-900 rounded-lg px-4 py-3 max-w-2xl">
+                                            <p className="text-sm font-bold mb-1 flex items-center gap-2">
+                                                <i className="fa-solid fa-robot text-indigo-600"></i>
+                                                AI Answer:
+                                            </p>
+                                            <p className="text-sm whitespace-pre-wrap">{chat.answer}</p>
+                                            {chat.sources && chat.sources.length > 0 && (
+                                                <div className="mt-2 pt-2 border-t border-slate-300">
+                                                    <p className="text-xs text-slate-600 font-bold mb-1">Sources:</p>
+                                                    {chat.sources.map((source, sidx) => (
+                                                        <p key={sidx} className="text-xs text-slate-500 truncate">
+                                                            • {source.content} (Relevance: {(source.score * 100).toFixed(0)}%)
+                                                        </p>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+
+                    {/* Question Input */}
+                    <div className="flex gap-2">
+                        <input
+                            type="text"
+                            value={question}
+                            onChange={(e) => setQuestion(e.target.value)}
+                            onKeyPress={(e) => e.key === 'Enter' && !isAsking && askQuestion()}
+                            placeholder="Ask a question about this manual..."
+                            disabled={isAsking}
+                            className="flex-1 px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-slate-100"
+                        />
+                        <button
+                            onClick={askQuestion}
+                            disabled={isAsking || !question.trim()}
+                            className="px-6 py-3 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-700 disabled:bg-slate-300 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+                        >
+                            {isAsking ? (
+                                <>
+                                    <i className="fa-solid fa-spinner fa-spin"></i>
+                                    Thinking...
+                                </>
+                            ) : (
+                                <>
+                                    <i className="fa-solid fa-paper-plane"></i>
+                                    Ask
+                                </>
+                            )}
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
