@@ -22,6 +22,7 @@ const SemanticComparisonDashboard: React.FC = () => {
     const [vendor, setVendor] = useState('JASRI');
     const [isUploading, setIsUploading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [successMessage, setSuccessMessage] = useState<string | null>(null);
     const [selectedDocId, setSelectedDocId] = useState<string | null>(null);
     const [report, setReport] = useState<any | null>(null);
     const [question, setQuestion] = useState('');
@@ -45,24 +46,21 @@ const SemanticComparisonDashboard: React.FC = () => {
 
     // Warn user before leaving if there's work in progress
     useEffect(() => {
-        const hasInProgressWork = documents.length > 0;
-
         const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-            if (hasInProgressWork) {
+            if (documents.length > 0) {
                 e.preventDefault();
-                e.returnValue = 'You have uploads or analysis in progress. Are you sure you want to leave?';
+                e.returnValue = 'You have documents in your session. Are you sure you want to leave?';
                 return e.returnValue;
             }
         };
 
-        if (hasInProgressWork) {
+        if (documents.length > 0) {
             window.addEventListener('beforeunload', handleBeforeUnload);
+            return () => {
+                window.removeEventListener('beforeunload', handleBeforeUnload);
+            };
         }
-
-        return () => {
-            window.removeEventListener('beforeunload', handleBeforeUnload);
-        };
-    }, [isUploading, isAnalyzingBatch, documents]);
+    }, [documents]);
 
     useEffect(() => {
         // Poll for document status
@@ -106,6 +104,7 @@ const SemanticComparisonDashboard: React.FC = () => {
         try {
             setIsUploading(true);
             setError(null);
+            setSuccessMessage(null);
 
             const formData = new FormData();
             formData.append('file', selectedFile);
@@ -127,11 +126,21 @@ const SemanticComparisonDashboard: React.FC = () => {
             };
 
             setDocuments(prev => [...prev, newDoc]);
+
+            // Show success message
+            setSuccessMessage(`✓ ${selectedFile.name} uploaded successfully! You can upload another file.`);
+
+            // Clear file selection and reset input
             setSelectedFile(null);
-            // Reset file input to allow selecting another file
             if (fileInputRef.current) {
                 fileInputRef.current.value = '';
             }
+
+            // Auto-clear success message after 3 seconds
+            setTimeout(() => {
+                setSuccessMessage(null);
+            }, 3000);
+
             // Don't clear beamlineId to allow multiple uploads for same beamline
         } catch (err: any) {
             setError(err.response?.data?.error || 'Failed to upload file');
@@ -315,6 +324,19 @@ const SemanticComparisonDashboard: React.FC = () => {
                         <p className="text-sm text-red-700">{error}</p>
                     </div>
                     <button onClick={() => setError(null)} className="text-red-600 hover:text-red-800">
+                        <i className="fa-solid fa-times"></i>
+                    </button>
+                </div>
+            )}
+
+            {/* Success Message Display */}
+            {successMessage && (
+                <div className="mb-6 bg-green-50 border border-green-200 rounded-lg p-4 flex items-start gap-3">
+                    <i className="fa-solid fa-check-circle text-green-600 mt-0.5"></i>
+                    <div className="flex-1">
+                        <p className="text-sm text-green-800 font-medium">{successMessage}</p>
+                    </div>
+                    <button onClick={() => setSuccessMessage(null)} className="text-green-600 hover:text-green-800">
                         <i className="fa-solid fa-times"></i>
                     </button>
                 </div>
@@ -574,12 +596,12 @@ const SemanticComparisonDashboard: React.FC = () => {
                             )}
 
                             {/* Recommendations */}
-                            {report.recommendations && report.recommendations.length > 0 && (
+                            {report.report.recommendations && report.report.recommendations.length > 0 && (
                                 <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
                                     <h3 className="text-sm font-bold text-blue-900 mb-2">Recommendations</h3>
                                     <ul className="space-y-1">
-                                        {report.recommendations.map((rec: string, idx: number) => (
-                                            <li key={idx} className="text-sm text-blue-800">{rec}</li>
+                                        {report.report.recommendations.map((rec: string, idx: number) => (
+                                            <li key={idx} className="text-sm text-blue-800">• {rec}</li>
                                         ))}
                                     </ul>
                                 </div>
