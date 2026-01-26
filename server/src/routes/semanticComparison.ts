@@ -220,25 +220,34 @@ function parseAIAnalysis(
     const coveragePercentage = coverageMatch ? parseInt(coverageMatch[1]) : 0;
 
     // Extract found sections
-    const foundMatch = aiResponse.match(/FOUND_SECTIONS:([\\s\\S]*?)(?:MISSING_SECTIONS:|$)/i);
+    const foundMatch = aiResponse.match(/FOUND_SECTIONS:([\s\S]*?)(?:MISSING_SECTIONS:|KEY_INSIGHTS:|$)/i);
     const foundSectionNames = foundMatch
-        ? foundMatch[1].trim().split('\n').filter(s => s.trim()).map(s => s.trim())
+        ? foundMatch[1].trim().split('\n')
+            .filter(s => s.trim())
+            .map(s => s.trim().replace(/^[-*•]\s*/, '')) // Remove bullet points
+            .filter(s => s.length > 0)
         : [];
 
     // Extract missing sections
-    const missingMatch = aiResponse.match(/MISSING_SECTIONS:([\\s\\S]*?)(?:CATEGORY_BREAKDOWN:|$)/i);
+    const missingMatch = aiResponse.match(/MISSING_SECTIONS:([\s\S]*?)(?:CATEGORY_BREAKDOWN:|KEY_INSIGHTS:|$)/i);
     const missingSectionNames = missingMatch
-        ? missingMatch[1].trim().split('\n').filter(s => s.trim()).map(s => s.trim())
+        ? missingMatch[1].trim().split('\n')
+            .filter(s => s.trim())
+            .map(s => s.trim().replace(/^[-*•]\s*/, '')) // Remove bullet points
+            .filter(s => s.length > 0)
         : [];
 
     // Extract insights
-    const insightsMatch = aiResponse.match(/KEY_INSIGHTS:([\\s\\S]*?)(?:RECOMMENDATIONS:|$)/i);
+    const insightsMatch = aiResponse.match(/KEY_INSIGHTS:([\s\S]*?)(?:RECOMMENDATIONS:|$)/i);
     const insights = insightsMatch ? insightsMatch[1].trim() : '';
 
     // Extract recommendations
-    const recsMatch = aiResponse.match(/RECOMMENDATIONS:([\\s\\S]*?)$/i);
+    const recsMatch = aiResponse.match(/RECOMMENDATIONS:([\s\S]*?)$/i);
     const recommendations = recsMatch
-        ? recsMatch[1].trim().split('\n').filter(s => s.trim()).map(s => s.trim())
+        ? recsMatch[1].trim().split('\n')
+            .filter(s => s.trim())
+            .map(s => s.trim().replace(/^[-*•]\s*/, '')) // Remove bullet points
+            .filter(s => s.length > 0)
         : [];
 
     // Build found sections array

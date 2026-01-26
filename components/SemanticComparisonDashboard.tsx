@@ -27,6 +27,8 @@ const SemanticComparisonDashboard: React.FC = () => {
     const [question, setQuestion] = useState('');
     const [chatHistory, setChatHistory] = useState<Array<{ question: string, answer: string, sources?: any[] }>>([]);
     const [isAsking, setIsAsking] = useState(false);
+    const [selectedDocs, setSelectedDocs] = useState<Set<string>>(new Set());
+    const [isAnalyzingBatch, setIsAnalyzingBatch] = useState(false);
 
     // 26 beamlines list
     const beamlines = [
@@ -68,7 +70,7 @@ const SemanticComparisonDashboard: React.FC = () => {
         }
     };
 
-    const uploadDocument = async () => {
+    const uploadFile = async () => {
         if (!selectedFile || !beamlineId) {
             setError('Please select a file and enter a beamline ID');
             return;
@@ -104,12 +106,72 @@ const SemanticComparisonDashboard: React.FC = () => {
 
             setDocuments(prev => [...prev, newDoc]);
             setSelectedFile(null);
-            setBeamlineId('');
+            // Don't clear beamlineId to allow multiple uploads for same beamline
         } catch (err: any) {
-            setError(err.response?.data?.error || 'Failed to upload document');
+            setError(err.response?.data?.error || 'Failed to upload file');
         } finally {
             setIsUploading(false);
         }
+    };
+
+    const analyzeDocument = async (documentId: string) => {
+        try {
+            setError(null);
+
+            // Update document status to show it's being analyzed
+            setDocuments(prev => prev.map(doc =>
+                doc.documentId === documentId
+                    ? { ...doc, progress: 50 }
+                    : doc
+            ));
+
+            // Trigger analysis (the upload endpoint already started it, but we can re-trigger if needed)
+            // For now, just start polling for status
+            const pollInterval = setInterval(async () => {
+                const status = await checkDocumentStatus(documentId);
+                if (status?.isComplete) {
+                    clearInterval(pollInterval);
+                }
+            }, 2000);
+
+        } catch (err: any) {
+            setError(err.response?.data?.error || 'Failed to analyze document');
+        }
+    };
+
+    const analyzeBatch = async () => {
+        if (selectedDocs.size === 0) {
+            setError('Please select at least one document to analyze');
+            return;
+        }
+
+        try {
+            setIsAnalyzingBatch(true);
+            setError(null);
+
+            // Analyze each selected document
+            for (const docId of Array.from(selectedDocs) as string[]) {
+                await analyzeDocument(docId);
+            }
+
+            setSelectedDocs(new Set());
+        } catch (err: any) {
+            setError(err.response?.data?.error || 'Failed to analyze documents');
+        } finally {
+            setIsAnalyzingBatch(false);
+        }
+    };
+
+    const toggleDocSelection = (documentId: string) => {
+        setSelectedDocs(prev => {
+            const newSet = new Set(prev);
+            if (newSet.has(documentId)) {
+                newSet.delete(documentId);
+            } else {
+                newSet.add(documentId);
+            }
+            return newSet;
+        });
     };
 
     const checkDocumentStatus = async (documentId: string) => {
@@ -119,16 +181,14 @@ const SemanticComparisonDashboard: React.FC = () => {
 
             setDocuments(prev => prev.map(doc =>
                 doc.documentId === documentId
-                    ? {
-                        ...doc,
-                        processedChunks: status.processedChunks,
-                        isComplete: status.isComplete,
-                        progress: status.progress
-                    }
+                    ? { ...doc, processedChunks: status.processedChunks, isComplete: status.isComplete, progress: status.progress }
                     : doc
             ));
+
+            return status;
         } catch (err) {
-            console.error('Failed to check status:', err);
+            console.error('Error checking status:', err);
+            return null;
         }
     };
 
@@ -180,6 +240,15 @@ const SemanticComparisonDashboard: React.FC = () => {
         } finally {
             setIsAsking(false);
         }
+    };
+
+    // Format answer to clean up markdown
+    const formatAnswer = (text: string): string => {
+        return text
+            .replace(/\*\*(.+?)\*\*/g, '$1') // Remove bold **text**
+            .replace(/\*(.+?)\*/g, '$1')     // Remove italic *text*
+            .replace(/^[-*•]\s+/gm, '• ')    // Normalize bullet points
+            .trim();
     };
 
     return (
@@ -265,7 +334,7 @@ const SemanticComparisonDashboard: React.FC = () => {
                     )}
                 </div>
                 <button
-                    onClick={uploadDocument}
+                    onClick={uploadFile}
                     disabled={isUploading || !selectedFile || !beamlineId}
                     className="px-6 py-3 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-700 disabled:bg-slate-300 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
                 >
@@ -277,7 +346,7 @@ const SemanticComparisonDashboard: React.FC = () => {
                     ) : (
                         <>
                             <i className="fa-solid fa-upload"></i>
-                            Upload and Analyze
+                            Upload File
                         </>
                     )}
                 </button>
@@ -286,7 +355,28 @@ const SemanticComparisonDashboard: React.FC = () => {
             {/* Documents List */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div>
-                    <h2 className="text-xl font-bold text-slate-800 mb-4">Uploaded Documents</h2>
+                    <div className="flex items-center justify-between mb-4">
+                        <h2 className="text-xl font-bold text-slate-800">Uploaded Documents</h2>
+                        {documents.some(d => !d.isComplete && d.progress === 0) && (
+                            <button
+                                onClick={analyzeBatch}
+                                disabled={isAnalyzingBatch || selectedDocs.size === 0}
+                                className="px-4 py-2 bg-green-600 text-white text-sm rounded-lg font-bold hover:bg-green-700 disabled:bg-slate-300 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+                            >
+                                {isAnalyzingBatch ? (
+                                    <>
+                                        <i className="fa-solid fa-spinner fa-spin"></i>
+                                        Analyzing...
+                                    </>
+                                ) : (
+                                    <>
+                                        <i className="fa-solid fa-play-circle"></i>
+                                        Analyze Selected ({selectedDocs.size})
+                                    </>
+                                )}
+                            </button>
+                        )}
+                    </div>
                     {documents.length === 0 ? (
                         <div className="bg-white rounded-xl border border-slate-200 p-8 text-center">
                             <i className="fa-solid fa-file-upload text-4xl text-slate-300 mb-3"></i>
@@ -297,50 +387,79 @@ const SemanticComparisonDashboard: React.FC = () => {
                             {documents.map(doc => (
                                 <div
                                     key={doc.documentId}
-                                    onClick={() => doc.isComplete && loadReport(doc.documentId)}
                                     className={`bg-white rounded-lg border-2 p-4 transition-all ${selectedDocId === doc.documentId
                                         ? 'border-indigo-500 bg-indigo-50'
-                                        : 'border-slate-200 hover:border-slate-300 cursor-pointer'
+                                        : 'border-slate-200 hover:border-slate-300'
                                         }`}
                                 >
-                                    <div className="flex items-start justify-between mb-2">
-                                        <div className="flex-1">
-                                            <h3 className="font-bold text-slate-800">{doc.filename}</h3>
-                                            <p className="text-sm text-slate-600">{doc.beamlineId}</p>
-                                        </div>
-                                        <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                deleteDocument(doc.documentId);
-                                            }}
-                                            className="text-red-600 hover:text-red-800"
+                                    <div className="flex items-start gap-3 mb-2">
+                                        {!doc.isComplete && doc.progress === 0 && (
+                                            <input
+                                                type="checkbox"
+                                                checked={selectedDocs.has(doc.documentId)}
+                                                onChange={() => toggleDocSelection(doc.documentId)}
+                                                className="mt-1 w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500"
+                                                onClick={(e) => e.stopPropagation()}
+                                            />
+                                        )}
+                                        <div
+                                            className="flex-1 cursor-pointer"
+                                            onClick={() => doc.isComplete && loadReport(doc.documentId)}
                                         >
-                                            <i className="fa-solid fa-trash"></i>
-                                        </button>
-                                    </div>
+                                            <div className="flex items-start justify-between mb-2">
+                                                <div className="flex-1">
+                                                    <h3 className="font-bold text-slate-800">{doc.filename}</h3>
+                                                    <p className="text-sm text-slate-600">{doc.beamlineId}</p>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    {!doc.isComplete && doc.progress === 0 && (
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                analyzeDocument(doc.documentId);
+                                                            }}
+                                                            className="px-3 py-1 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition-colors flex items-center gap-1"
+                                                        >
+                                                            <i className="fa-solid fa-play"></i>
+                                                            Analyze
+                                                        </button>
+                                                    )}
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            deleteDocument(doc.documentId);
+                                                        }}
+                                                        className="text-red-600 hover:text-red-800"
+                                                    >
+                                                        <i className="fa-solid fa-trash"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
 
-                                    {!doc.isComplete ? (
-                                        <div>
-                                            <div className="flex items-center gap-2 mb-2">
-                                                <i className="fa-solid fa-spinner fa-spin text-indigo-600"></i>
-                                                <span className="text-sm text-slate-600">Processing... {doc.progress}%</span>
-                                            </div>
-                                            <div className="w-full bg-slate-200 rounded-full h-2">
-                                                <div
-                                                    className="bg-indigo-600 h-2 rounded-full transition-all"
-                                                    style={{ width: `${doc.progress}%` }}
-                                                ></div>
-                                            </div>
-                                            <p className="text-xs text-slate-500 mt-1">
-                                                {doc.processedChunks} / {doc.totalChunks} chunks processed
-                                            </p>
+                                            {!doc.isComplete ? (
+                                                <div>
+                                                    <div className="flex items-center gap-2 mb-2">
+                                                        <i className="fa-solid fa-spinner fa-spin text-indigo-600"></i>
+                                                        <span className="text-sm text-slate-600">Processing... {doc.progress}%</span>
+                                                    </div>
+                                                    <div className="w-full bg-slate-200 rounded-full h-2">
+                                                        <div
+                                                            className="bg-indigo-600 h-2 rounded-full transition-all"
+                                                            style={{ width: `${doc.progress}%` }}
+                                                        ></div>
+                                                    </div>
+                                                    <p className="text-xs text-slate-500 mt-1">
+                                                        {doc.processedChunks} / {doc.totalChunks} chunks processed
+                                                    </p>
+                                                </div>
+                                            ) : (
+                                                <div className="flex items-center gap-2 text-green-600">
+                                                    <i className="fa-solid fa-check-circle"></i>
+                                                    <span className="text-sm font-bold">Analysis Complete</span>
+                                                </div>
+                                            )}
                                         </div>
-                                    ) : (
-                                        <div className="flex items-center gap-2 text-green-600">
-                                            <i className="fa-solid fa-check-circle"></i>
-                                            <span className="text-sm font-bold">Analysis Complete</span>
-                                        </div>
-                                    )}
+                                    </div>
                                 </div>
                             ))}
                         </div>
@@ -446,88 +565,90 @@ const SemanticComparisonDashboard: React.FC = () => {
                         </div>
                     )}
                 </div>
-            </div>
+            </div >
 
             {/* Q&A Interface (NotebookLM-style) */}
-            {selectedDocId && report && (
-                <div className="mt-8 bg-white rounded-xl border border-slate-200 p-6">
-                    <h2 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
-                        <i className="fa-solid fa-comments text-indigo-600"></i>
-                        Ask Questions About This Document
-                    </h2>
-                    <p className="text-sm text-slate-600 mb-4">
-                        Ask questions about the manual content and get AI-powered answers based on the document.
-                    </p>
+            {
+                selectedDocId && report && (
+                    <div className="mt-8 bg-white rounded-xl border border-slate-200 p-6">
+                        <h2 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
+                            <i className="fa-solid fa-comments text-indigo-600"></i>
+                            Ask Questions About This Document
+                        </h2>
+                        <p className="text-sm text-slate-600 mb-4">
+                            Ask questions about the manual content and get AI-powered answers based on the document.
+                        </p>
 
-                    {/* Chat History */}
-                    {chatHistory.length > 0 && (
-                        <div className="mb-4 space-y-4 max-h-96 overflow-y-auto">
-                            {chatHistory.map((chat, idx) => (
-                                <div key={idx} className="space-y-2">
-                                    {/* Question */}
-                                    <div className="flex justify-end">
-                                        <div className="bg-indigo-100 text-indigo-900 rounded-lg px-4 py-2 max-w-2xl">
-                                            <p className="text-sm font-bold mb-1">You asked:</p>
-                                            <p className="text-sm">{chat.question}</p>
+                        {/* Chat History */}
+                        {chatHistory.length > 0 && (
+                            <div className="mb-4 space-y-4 max-h-96 overflow-y-auto">
+                                {chatHistory.map((chat, idx) => (
+                                    <div key={idx} className="space-y-2">
+                                        {/* Question */}
+                                        <div className="flex justify-end">
+                                            <div className="bg-indigo-100 text-indigo-900 rounded-lg px-4 py-2 max-w-2xl">
+                                                <p className="text-sm font-bold mb-1">You asked:</p>
+                                                <p className="text-sm">{chat.question}</p>
+                                            </div>
+                                        </div>
+                                        {/* Answer */}
+                                        <div className="flex justify-start">
+                                            <div className="bg-slate-100 text-slate-900 rounded-lg px-4 py-3 max-w-2xl">
+                                                <p className="text-sm font-bold mb-1 flex items-center gap-2">
+                                                    <i className="fa-solid fa-robot text-indigo-600"></i>
+                                                    AI Answer:
+                                                </p>
+                                                <p className="text-sm whitespace-pre-wrap">{formatAnswer(chat.answer)}</p>
+                                                {chat.sources && chat.sources.length > 0 && (
+                                                    <div className="mt-2 pt-2 border-t border-slate-300">
+                                                        <p className="text-xs text-slate-600 font-bold mb-1">Sources:</p>
+                                                        {chat.sources.map((source, sidx) => (
+                                                            <p key={sidx} className="text-xs text-slate-500 truncate">
+                                                                • {source.content} (Relevance: {(source.score * 100).toFixed(0)}%)
+                                                            </p>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
-                                    {/* Answer */}
-                                    <div className="flex justify-start">
-                                        <div className="bg-slate-100 text-slate-900 rounded-lg px-4 py-3 max-w-2xl">
-                                            <p className="text-sm font-bold mb-1 flex items-center gap-2">
-                                                <i className="fa-solid fa-robot text-indigo-600"></i>
-                                                AI Answer:
-                                            </p>
-                                            <p className="text-sm whitespace-pre-wrap">{chat.answer}</p>
-                                            {chat.sources && chat.sources.length > 0 && (
-                                                <div className="mt-2 pt-2 border-t border-slate-300">
-                                                    <p className="text-xs text-slate-600 font-bold mb-1">Sources:</p>
-                                                    {chat.sources.map((source, sidx) => (
-                                                        <p key={sidx} className="text-xs text-slate-500 truncate">
-                                                            • {source.content} (Relevance: {(source.score * 100).toFixed(0)}%)
-                                                        </p>
-                                                    ))}
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
+                                ))}
+                            </div>
+                        )}
+
+                        {/* Question Input */}
+                        <div className="flex gap-2">
+                            <input
+                                type="text"
+                                value={question}
+                                onChange={(e) => setQuestion(e.target.value)}
+                                onKeyPress={(e) => e.key === 'Enter' && !isAsking && askQuestion()}
+                                placeholder="Ask a question about this manual..."
+                                disabled={isAsking}
+                                className="flex-1 px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-slate-100"
+                            />
+                            <button
+                                onClick={askQuestion}
+                                disabled={isAsking || !question.trim()}
+                                className="px-6 py-3 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-700 disabled:bg-slate-300 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+                            >
+                                {isAsking ? (
+                                    <>
+                                        <i className="fa-solid fa-spinner fa-spin"></i>
+                                        Thinking...
+                                    </>
+                                ) : (
+                                    <>
+                                        <i className="fa-solid fa-paper-plane"></i>
+                                        Ask
+                                    </>
+                                )}
+                            </button>
                         </div>
-                    )}
-
-                    {/* Question Input */}
-                    <div className="flex gap-2">
-                        <input
-                            type="text"
-                            value={question}
-                            onChange={(e) => setQuestion(e.target.value)}
-                            onKeyPress={(e) => e.key === 'Enter' && !isAsking && askQuestion()}
-                            placeholder="Ask a question about this manual..."
-                            disabled={isAsking}
-                            className="flex-1 px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-slate-100"
-                        />
-                        <button
-                            onClick={askQuestion}
-                            disabled={isAsking || !question.trim()}
-                            className="px-6 py-3 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-700 disabled:bg-slate-300 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
-                        >
-                            {isAsking ? (
-                                <>
-                                    <i className="fa-solid fa-spinner fa-spin"></i>
-                                    Thinking...
-                                </>
-                            ) : (
-                                <>
-                                    <i className="fa-solid fa-paper-plane"></i>
-                                    Ask
-                                </>
-                            )}
-                        </button>
                     </div>
-                </div>
-            )}
-        </div>
+                )
+            }
+        </div >
     );
 };
 
