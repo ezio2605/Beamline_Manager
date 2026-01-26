@@ -426,5 +426,66 @@ export class FirestoreService {
         await batch.commit();
         console.log(`✅ Deleted all semantic data for document ${documentId}`);
     }
+
+    /**
+     * Get vector documents for multiple file IDs
+     */
+    static async getVectorDocumentsByMultipleFileIds(fileIds: string[]): Promise<VectorDocument[]> {
+        if (fileIds.length === 0) return [];
+
+        // Firestore 'in' queries support up to 10 items, so we need to batch if more
+        const batchSize = 10;
+        const results: VectorDocument[] = [];
+
+        for (let i = 0; i < fileIds.length; i += batchSize) {
+            const batch = fileIds.slice(i, i + batchSize);
+            const snapshot = await firestore
+                .collection(COLLECTIONS.VECTORS)
+                .where('fileId', 'in', batch)
+                .get();
+
+            results.push(...snapshot.docs.map(doc => doc.data() as VectorDocument));
+        }
+
+        return results;
+    }
+
+    /**
+     * Save a combined report for multiple documents
+     */
+    static async saveCombinedReport(report: any): Promise<void> {
+        await firestore.collection(COLLECTIONS.MISSING_ELEMENTS_REPORTS).doc(report.id).set({
+            ...report,
+            isCombined: true,
+        });
+    }
+
+    /**
+     * Get combined report by document IDs
+     */
+    static async getCombinedReport(documentIds: string[]): Promise<any | null> {
+        // Sort document IDs to ensure consistent lookup
+        const sortedIds = [...documentIds].sort();
+        const combinedId = `combined_${sortedIds.join('_')}`;
+
+        const doc = await firestore
+            .collection(COLLECTIONS.MISSING_ELEMENTS_REPORTS)
+            .doc(combinedId)
+            .get();
+
+        return doc.exists ? doc.data() : null;
+    }
+
+    /**
+     * Get the latest report for document IDs (combined or single)
+     */
+    static async getReportForDocuments(documentIds: string[]): Promise<any | null> {
+        if (documentIds.length === 1) {
+            return this.getMissingElementsReport(documentIds[0]);
+        }
+
+        // Try to get combined report
+        return this.getCombinedReport(documentIds);
+    }
 }
 

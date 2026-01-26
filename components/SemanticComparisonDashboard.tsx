@@ -25,13 +25,14 @@ const SemanticComparisonDashboard: React.FC<SemanticComparisonDashboardProps> = 
     const [isUploading, setIsUploading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
-    const [selectedDocId, setSelectedDocId] = useState<string | null>(null);
+    const [selectedDocIds, setSelectedDocIds] = useState<string[]>([]);
     const [report, setReport] = useState<any | null>(null);
     const [question, setQuestion] = useState('');
     const [chatHistory, setChatHistory] = useState<Array<{ question: string, answer: string, sources?: any[] }>>([]);
     const [isAsking, setIsAsking] = useState(false);
     const [selectedDocs, setSelectedDocs] = useState<Set<string>>(new Set());
     const [isAnalyzingBatch, setIsAnalyzingBatch] = useState(false);
+    const [isCombinedReport, setIsCombinedReport] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     // 26 beamlines list
@@ -187,15 +188,39 @@ const SemanticComparisonDashboard: React.FC<SemanticComparisonDashboardProps> = 
             setIsAnalyzingBatch(true);
             setError(null);
 
-            // Analyze each selected document
-            for (const docId of Array.from(selectedDocs) as string[]) {
-                await analyzeDocument(docId);
-            }
+            const docIds = Array.from(selectedDocs) as string[];
 
-            setSelectedDocs(new Set());
+            // Call the new batch analysis endpoint
+            await axios.post(`${API_BASE}/semantic-comparison/analyze-batch`, {
+                documentIds: docIds
+            });
+
+            // Start polling for combined report status
+            const pollInterval = setInterval(async () => {
+                try {
+                    const statusRes = await axios.post(`${API_BASE}/semantic-comparison/batch-status`, {
+                        documentIds: docIds
+                    });
+
+                    if (statusRes.data.data.isComplete) {
+                        clearInterval(pollInterval);
+                        // Load the combined report
+                        await loadCombinedReport(docIds);
+                        setIsAnalyzingBatch(false);
+                    }
+                } catch (err) {
+                    console.error('Error polling status:', err);
+                }
+            }, 3000);
+
+            // Clear timeout after 2 minutes
+            setTimeout(() => {
+                clearInterval(pollInterval);
+                setIsAnalyzingBatch(false);
+            }, 120000);
+
         } catch (err: any) {
             setError(err.response?.data?.error || 'Failed to analyze documents');
-        } finally {
             setIsAnalyzingBatch(false);
         }
     };
@@ -236,9 +261,29 @@ const SemanticComparisonDashboard: React.FC<SemanticComparisonDashboardProps> = 
             console.log('📄 Loaded report:', res.data.data);
             console.log('📋 Recommendations:', res.data.data.recommendations);
             setReport(res.data.data);
-            setSelectedDocId(documentId);
+            setSelectedDocIds([documentId]);
+            setIsCombinedReport(false);
+            setChatHistory([]);
         } catch (err: any) {
             setError(err.response?.data?.error || 'Failed to load report');
+        }
+    };
+
+    const loadCombinedReport = async (documentIds: string[]) => {
+        try {
+            const res = await axios.post(`${API_BASE}/semantic-comparison/combined-report`, {
+                documentIds
+            });
+            console.log('📄 Loaded combined report:', res.data.data);
+            console.log('📋 Recommendations:', res.data.data.recommendations);
+            setReport(res.data.data);
+            setSelectedDocIds(documentIds);
+            setIsCombinedReport(true);
+            setChatHistory([]);
+            // Clear selection checkboxes after loading report
+            setSelectedDocs(new Set());
+        } catch (err: any) {
+            setError(err.response?.data?.error || 'Failed to load combined report');
         }
     };
 
@@ -248,10 +293,11 @@ const SemanticComparisonDashboard: React.FC<SemanticComparisonDashboardProps> = 
         try {
             await axios.delete(`${API_BASE}/semantic-comparison/${documentId}`);
             setDocuments(prev => prev.filter(doc => doc.documentId !== documentId));
-            if (selectedDocId === documentId) {
-                setSelectedDocId(null);
+            if (selectedDocIds.includes(documentId)) {
+                setSelectedDocIds([]);
                 setReport(null);
                 setChatHistory([]);
+                setIsCombinedReport(false);
             }
         } catch (err) {
             setError('Failed to delete document');
@@ -259,14 +305,15 @@ const SemanticComparisonDashboard: React.FC<SemanticComparisonDashboardProps> = 
     };
 
     const askQuestion = async () => {
-        if (!question.trim() || !selectedDocId) return;
+        if (!question.trim() || selectedDocIds.length === 0) return;
 
         try {
             setIsAsking(true);
             setError(null);
 
-            const res = await axios.post(`${API_BASE}/semantic-comparison/${selectedDocId}/ask`, {
-                question: question.trim()
+            const res = await axios.post(`${API_BASE}/semantic-comparison/${selectedDocIds[0]}/ask`, {
+                question: question.trim(),
+                documentIds: selectedDocIds
             });
 
             setChatHistory(prev => [...prev, {
@@ -459,7 +506,7 @@ const SemanticComparisonDashboard: React.FC<SemanticComparisonDashboardProps> = 
                             {documents.map(doc => (
                                 <div
                                     key={doc.documentId}
-                                    className={`bg-white rounded-lg border-2 p-4 transition-all ${selectedDocId === doc.documentId
+                                    className={`bg-white rounded-lg border-2 p-4 transition-all ${selectedDocIds.includes(doc.documentId)
                                         ? 'border-indigo-500 bg-indigo-50'
                                         : 'border-slate-200 hover:border-slate-300'
                                         }`}
@@ -641,15 +688,30 @@ const SemanticComparisonDashboard: React.FC<SemanticComparisonDashboardProps> = 
 
             {/* Q&A Interface (NotebookLM-style) */}
             {
-                selectedDocId && report && (
+                selectedDocIds.length > 0 && report && (
                     <div className="mt-8 bg-white rounded-xl border border-slate-200 p-6">
-                        <h2 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
-                            <i className="fa-solid fa-comments text-indigo-600"></i>
-                            Ask Questions
-                        </h2>
-                        {/* <p className="text-sm text-slate-600 mb-4">
-                            Ask questions about the manual content and get AI-powered answers based on the document.
-                        </p> */}
+                        <div className="mb-4">
+                            <h2 className="text-xl font-bold text-slate-800 mb-2 flex items-center gap-2">
+                                <i className="fa-solid fa-comments text-indigo-600"></i>
+                                Ask Questions
+                            </h2>
+                            {isCombinedReport && report.report?.documentMetadata && (
+                                <div className="bg-indigo-50 border border-indigo-200 rounded-lg px-3 py-2">
+                                    <p className="text-xs text-indigo-800">
+                                        <strong>Querying {selectedDocIds.length} documents:</strong>{' '}
+                                        {report.report.documentMetadata.map((doc: any) => doc.filename).join(', ')}
+                                    </p>
+                                </div>
+                            )}
+                            {!isCombinedReport && (
+                                <div className="bg-indigo-50 border border-indigo-200 rounded-lg px-3 py-2">
+                                    <p className="text-xs text-indigo-800">
+                                        <strong>Querying document:</strong>{' '}
+                                        {documents.find(d => d.documentId === selectedDocIds[0])?.filename || 'Unknown'}
+                                    </p>
+                                </div>
+                            )}
+                        </div>
 
                         {/* Chat History */}
                         {chatHistory.length > 0 && (
@@ -674,9 +736,9 @@ const SemanticComparisonDashboard: React.FC<SemanticComparisonDashboardProps> = 
                                                 {chat.sources && chat.sources.length > 0 && (
                                                     <div className="mt-2 pt-2 border-t border-slate-300">
                                                         <p className="text-xs text-slate-600 font-bold mb-1">Sources:</p>
-                                                        {chat.sources.map((source, sidx) => (
+                                                        {chat.sources.map((source: any, sidx) => (
                                                             <p key={sidx} className="text-xs text-slate-500 truncate">
-                                                                • {source.content} (Relevance: {(source.score * 100).toFixed(0)}%)
+                                                                • {source.filename && `[${source.filename}] `}{source.content} (Relevance: {(source.score * 100).toFixed(0)}%)
                                                             </p>
                                                         ))}
                                                     </div>
