@@ -175,7 +175,7 @@ const StandardStructureManager: React.FC = () => {
             {/* Header */}
             <div className="mb-8">
                 <h1 className="text-4xl font-extrabold text-slate-900 mb-2">Standard Structure Manager</h1>
-                <p className="text-slate-600">Manage and configure standard manual structures for semantic comparison</p>
+                {/* <p className="text-slate-600">Manage and configure standard manual structures for semantic comparison</p> */}
             </div>
 
             {/* Error Display */}
@@ -236,8 +236,8 @@ const StandardStructureManager: React.FC = () => {
                                         key={structure.id}
                                         onClick={() => setSelectedStructure(structure)}
                                         className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${selectedStructure?.id === structure.id
-                                                ? 'border-indigo-500 bg-indigo-50'
-                                                : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                                            ? 'border-indigo-500 bg-indigo-50'
+                                            : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
                                             }`}
                                     >
                                         <div className="flex items-start justify-between mb-2">

@@ -343,7 +343,7 @@ const SemanticComparisonDashboard: React.FC<SemanticComparisonDashboardProps> = 
             {/* Header */}
             <div className="mb-8">
                 <h1 className="text-4xl font-extrabold text-slate-900 mb-2">Semantic Manual Comparison</h1>
-                <p className="text-slate-600">Upload and analyze beamline manuals against standard structure</p>
+                {/* <p className="text-slate-600">Upload and analyze beamline manuals against standard structure</p> */}
             </div>
 
             {/* Active Structure Status */}

@@ -657,17 +657,34 @@ router.post('/:documentId/ask', async (req: Request, res: Response) => {
             });
         }
 
-        // Use RAG to find relevant chunks across all documents
-        const beamlineId = vectorDocs[0].beamlineId;
-        const relevantDocs = await VectorSearchService.searchSimilar(question, beamlineId, 5);
+        // Get active standard structure for context
+        const standardStructure = await StandardStructureService.getActiveStructure();
 
-        // Filter relevant docs to only include chunks from target documents
-        const filteredDocs = relevantDocs.filter(doc =>
-            targetDocIds.includes(doc.document.fileId)
-        );
+        // Improved multi-document vector search:
+        // Search for each document individually to ensure comprehensive coverage
+        const beamlineId = vectorDocs[0].beamlineId;
+        const allRelevantDocs: any[] = [];
+
+        // Perform vector search for each target document
+        for (const docId of targetDocIds) {
+            const docChunks = vectorDocs.filter(v => v.fileId === docId);
+            if (docChunks.length > 0) {
+                // Search within this document's context
+                const docRelevant = await VectorSearchService.searchSimilar(question, beamlineId, 10);
+                // Filter to only this document's chunks
+                const docFiltered = docRelevant.filter(doc => doc.document.fileId === docId);
+                // Take top 3 results per document
+                allRelevantDocs.push(...docFiltered.slice(0, 3));
+            }
+        }
+
+        // Remove duplicates and sort by score
+        const uniqueDocs = Array.from(
+            new Map(allRelevantDocs.map(doc => [doc.document.id, doc])).values()
+        ).sort((a, b) => b.score - a.score);
 
         // Build context from relevant chunks
-        const context = filteredDocs
+        const context = uniqueDocs
             .map((doc, idx) => {
                 const filename = doc.document.metadata?.filename || 'Unknown';
                 return `[Source: ${filename}, Chunk ${idx + 1}]: ${doc.document.content}`;
@@ -680,10 +697,51 @@ router.post('/:documentId/ask', async (req: Request, res: Response) => {
             return doc?.metadata?.filename || 'Unknown';
         }).join(', ');
 
-        // Build Q&A prompt
+        // Build standard structure context
+        let standardStructureContext = '';
+        if (standardStructure) {
+            const sections = standardStructure.sections.map((s: any) =>
+                `  - ${s.name} (${s.required ? 'REQUIRED' : 'Optional'}, Category: ${s.category}): ${s.description || 'No description'}`
+            ).join('\n');
+
+            standardStructureContext = `
+
+**Active Manual Standard Structure**: ${standardStructure.name} v${standardStructure.version}
+**Standard Sections**:
+${sections}
+`;
+        }
+
+        // Try to get the report for additional context about found/missing sections
+        let reportContext = '';
+        try {
+            let report = null;
+            if (targetDocIds.length === 1) {
+                report = await FirestoreService.getMissingElementsReport(targetDocIds[0]);
+            } else {
+                report = await FirestoreService.getCombinedReport(targetDocIds);
+            }
+
+            if (report) {
+                const foundSectionNames = report.foundSections?.map((s: any) => s.sectionName).join(', ') || 'None';
+                const missingSectionNames = report.missingSections?.map((s: any) => s.sectionName).join(', ') || 'None';
+                reportContext = `
+
+**Report Analysis**:
+- Coverage: ${report.coveragePercentage}%
+- Found Sections: ${foundSectionNames}
+- Missing Sections: ${missingSectionNames}
+`;
+            }
+        } catch (err) {
+            // Report not available, continue without it
+        }
+
+        // Build Q&A prompt with standard structure context
         const qaPrompt = `You are a helpful assistant analyzing beamline operation manual(s).
 
 **Documents Being Queried**: ${docNames}
+${standardStructureContext}${reportContext}
 
 **User Question**: ${question}
 
@@ -691,10 +749,12 @@ router.post('/:documentId/ask', async (req: Request, res: Response) => {
 ${context}
 
 **Instructions**:
-- Answer the question based ONLY on the provided document sections
+- Answer the question based on the provided document sections and standard structure information
 - Be specific and cite relevant details from the documents
 - If information comes from a specific document, mention which one
-- If the information is not in the provided sections, say so
+- When relevant, reference the standard structure requirements and categories
+- If asked about missing sections or compliance, use the report analysis and standard structure
+- If the information is not in the provided sections, say so clearly
 - Keep your answer concise but comprehensive
 
 **Answer**:`;
@@ -710,7 +770,7 @@ ${context}
                 question,
                 answer,
                 documentCount: targetDocIds.length,
-                sources: filteredDocs.map(doc => ({
+                sources: uniqueDocs.map(doc => ({
                     filename: doc.document.metadata?.filename || 'Unknown',
                     content: doc.document.content.substring(0, 200) + '...',
                     score: doc.score,
