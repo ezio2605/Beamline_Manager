@@ -487,14 +487,7 @@ const SemanticComparisonDashboard: React.FC<SemanticComparisonDashboardProps> = 
                                 </button>
                             )}
                         </div>
-                        {documents.some(d => d.status === 'uploaded') && (
-                            <div className="bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 flex items-center gap-2">
-                                <i className="fa-solid fa-info-circle text-blue-600 text-sm"></i>
-                                <p className="text-xs text-blue-800">
-                                    <strong>Tip:</strong> Select documents using checkboxes and click "Analyze Selected" to process them
-                                </p>
-                            </div>
-                        )}
+
                     </div>
                     {documents.length === 0 ? (
                         <div className="bg-white rounded-xl border border-slate-200 p-8 text-center">
@@ -698,8 +691,7 @@ const SemanticComparisonDashboard: React.FC<SemanticComparisonDashboardProps> = 
                             {isCombinedReport && report.report?.documentMetadata && (
                                 <div className="bg-indigo-50 border border-indigo-200 rounded-lg px-3 py-2">
                                     <p className="text-xs text-indigo-800">
-                                        <strong>Querying {selectedDocIds.length} documents:</strong>{' '}
-                                        {report.report.documentMetadata.map((doc: any) => doc.filename).join(', ')}
+                                        <strong>Querying {selectedDocIds.length} document{selectedDocIds.length !== 1 ? 's' : ''}</strong>
                                     </p>
                                 </div>
                             )}

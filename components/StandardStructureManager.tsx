@@ -159,17 +159,6 @@ const StandardStructureManager: React.FC = () => {
         );
     };
 
-    if (isLoading) {
-        return (
-            <div className="flex items-center justify-center h-screen">
-                <div className="text-center">
-                    <i className="fa-solid fa-spinner fa-spin text-4xl text-indigo-600 mb-4"></i>
-                    <p className="text-slate-600">Loading structures...</p>
-                </div>
-            </div>
-        );
-    }
-
     return (
         <div className="p-10 max-w-7xl mx-auto">
             {/* Header */}

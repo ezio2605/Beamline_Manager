@@ -3,6 +3,7 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import * as d3 from 'd3';
 import { BEAMLINE_MANUALS } from '../mockData';
 import { BeamlineNode } from '../types';
+import ASCIITreeView from './ASCIITreeView';
 
 const BeamlineExplorer: React.FC = () => {
   const svgRef = useRef<SVGSVGElement>(null);
@@ -14,6 +15,7 @@ const BeamlineExplorer: React.FC = () => {
   const [selectedBeamline, setSelectedBeamline] = useState<BeamlineNode | null>(null);
   const [selectedNodeData, setSelectedNodeData] = useState<BeamlineNode | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [viewMode, setViewMode] = useState<'d3' | 'ascii'>('d3');
 
   // D3 state management for hierarchy
   const [rootHierarchy, setRootHierarchy] = useState<d3.HierarchyNode<BeamlineNode> | null>(null);
@@ -39,6 +41,14 @@ const BeamlineExplorer: React.FC = () => {
       setSelectedNodeData(null);
     }
   }, [selectedBeamline]);
+
+  // Re-render D3 tree when switching back to D3 view
+  useEffect(() => {
+    if (viewMode === 'd3' && rootHierarchy && svgRef.current) {
+      // Force re-render when switching to D3 view
+      renderTree();
+    }
+  }, [viewMode]);
 
   // const handleZoom = (type: 'in' | 'out' | 'reset') => {
   //   if (!svgRef.current || !zoomRef.current || !containerRef.current) return;
@@ -400,7 +410,7 @@ const BeamlineExplorer: React.FC = () => {
 
   // Handle Zoom and Initial Render
   useEffect(() => {
-    if (!rootHierarchy || !svgRef.current || !containerRef.current) return;
+    if (!rootHierarchy || !svgRef.current || !containerRef.current || viewMode !== 'd3') return;
 
     const svg = d3.select(svgRef.current);
 
@@ -457,7 +467,7 @@ const BeamlineExplorer: React.FC = () => {
     svg.call(zoom.transform, transform);
 
     renderTree();
-  }, [rootHierarchy]);
+  }, [rootHierarchy, viewMode]);
 
   // Re-render when dependencies change
   useEffect(() => {
@@ -546,52 +556,73 @@ const BeamlineExplorer: React.FC = () => {
       <div className="absolute top-10 left-10 flex flex-col gap-5 z-10">
         <div className="flex gap-4">
           <button
-            onClick={() => { setSelectedBeamline(null); setSelectedNodeData(null); }}
+            onClick={() => { setSelectedBeamline(null); setSelectedNodeData(null); setViewMode('d3'); }}
             className="px-4 py-2 bg-slate-900 text-white rounded-xl shadow-3xl hover:bg-black transition-all flex items-center gap-2 text-xs font-black group border-b-2 border-slate-800 active:border-b-0 active:translate-y-1"
           >
             <i className="fa-solid fa-arrow-left group-hover:-translate-x-1 transition-transform"></i>
             Back to Registry
           </button>
-          {/* <div className="bg-white/90 backdrop-blur px-8 py-5 border border-slate-200 rounded-3xl shadow-2xl flex items-center gap-4 text-sm font-black text-indigo-600 border-b-4 border-indigo-50">
-            <div className="w-3 h-3 rounded-full bg-indigo-500 animate-pulse"></div>
-            {selectedBeamline.name} Hierarchy Explorer
-          </div> */}
+
+          {/* View Toggle Button */}
+          <button
+            onClick={() => setViewMode(viewMode === 'd3' ? 'ascii' : 'd3')}
+            className="px-4 py-2 bg-indigo-600 text-white rounded-xl shadow-3xl hover:bg-indigo-700 transition-all flex items-center gap-2 text-xs font-black border-b-2 border-indigo-800 active:border-b-0 active:translate-y-1"
+          >
+            <i className={`fa-solid ${viewMode === 'd3' ? 'fa-list-tree' : 'fa-project-diagram'}`}></i>
+            {viewMode === 'd3' ? 'ASCII View' : 'Mindmap View'}
+          </button>
         </div>
 
-        <div className="flex flex-col gap-2 w-fit">
-          <div className="flex gap-2">
-            <button
-              onClick={() => handleZoom('in')}
-              className="w-14 h-14 bg-white border border-slate-200 rounded-2xl shadow-xl flex items-center justify-center text-slate-600 hover:bg-slate-50 transition-all hover:scale-110 active:scale-95"
-              title="Zoom In"
-            >
-              <i className="fa-solid fa-plus"></i>
-            </button>
-            <button
-              onClick={() => handleZoom('out')}
-              className="w-14 h-14 bg-white border border-slate-200 rounded-2xl shadow-xl flex items-center justify-center text-slate-600 hover:bg-slate-50 transition-all hover:scale-110 active:scale-95"
-              title="Zoom Out"
-            >
-              <i className="fa-solid fa-minus"></i>
-            </button>
-            <button
-              onClick={() => handleZoom('reset')}
-              className="w-14 h-14 bg-white border border-slate-200 rounded-2xl shadow-xl flex items-center justify-center text-slate-600 hover:bg-slate-50 transition-all hover:scale-110 active:scale-95"
-              title="Reset View"
-            >
-              <i className="fa-solid fa-expand"></i>
-            </button>
+        {/* Zoom controls - only show in D3 mode */}
+        {viewMode === 'd3' && (
+          <div className="flex flex-col gap-2 w-fit">
+            <div className="flex gap-2">
+              <button
+                onClick={() => handleZoom('in')}
+                className="w-14 h-14 bg-white border border-slate-200 rounded-2xl shadow-xl flex items-center justify-center text-slate-600 hover:bg-slate-50 transition-all hover:scale-110 active:scale-95"
+                title="Zoom In"
+              >
+                <i className="fa-solid fa-plus"></i>
+              </button>
+              <button
+                onClick={() => handleZoom('out')}
+                className="w-14 h-14 bg-white border border-slate-200 rounded-2xl shadow-xl flex items-center justify-center text-slate-600 hover:bg-slate-50 transition-all hover:scale-110 active:scale-95"
+                title="Zoom Out"
+              >
+                <i className="fa-solid fa-minus"></i>
+              </button>
+              <button
+                onClick={() => handleZoom('reset')}
+                className="w-14 h-14 bg-white border border-slate-200 rounded-2xl shadow-xl flex items-center justify-center text-slate-600 hover:bg-slate-50 transition-all hover:scale-110 active:scale-95"
+                title="Reset View"
+              >
+                <i className="fa-solid fa-expand"></i>
+              </button>
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
-      <svg
-        ref={svgRef}
-        className="w-full h-full cursor-move active:cursor-grabbing"
-        onClick={() => setSelectedNodeData(null)}
-      >
-        {/* D3 handles group rendering inside via refs and callbacks */}
-      </svg>
+      {/* Conditional rendering based on view mode */}
+      {viewMode === 'd3' ? (
+        <svg
+          ref={svgRef}
+          className="w-full h-full cursor-move active:cursor-grabbing"
+          onClick={() => setSelectedNodeData(null)}
+        >
+          {/* D3 handles group rendering inside via refs and callbacks */}
+        </svg>
+      ) : (
+        <ASCIITreeView
+          data={selectedBeamline}
+          onNodeSelect={setSelectedNodeData}
+          selectedNode={selectedNodeData}
+          onDataChange={(updatedData) => {
+            // Update the selected beamline with the modified data
+            setSelectedBeamline(updatedData);
+          }}
+        />
+      )}
 
       {/* Visual Connection Legend */}
       {/* <div className="absolute bottom-10 left-10 bg-white/90 backdrop-blur p-6 rounded-[2.5rem] shadow-3xl z-10 flex gap-8 items-center border border-slate-100 border-b-4 border-b-slate-200">
