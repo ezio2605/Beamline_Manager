@@ -540,7 +540,7 @@ const SemanticComparisonDashboard: React.FC<SemanticComparisonDashboardProps> = 
                                                 </div>
                                             </div>
 
-                                            {doc.status === 'uploaded' && (
+                                            {/* {doc.status === 'uploaded' && (
                                                 <span className="px-3 py-1 bg-blue-100 text-blue-700 text-xs font-bold rounded-full">
                                                     Ready to Analyze
                                                 </span>
@@ -556,7 +556,7 @@ const SemanticComparisonDashboard: React.FC<SemanticComparisonDashboardProps> = 
                                                     <i className="fa-solid fa-check-circle"></i>
                                                     Complete
                                                 </span>
-                                            )}
+                                            )} */}
                                         </div>
                                     </div>
                                 </div>

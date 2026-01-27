@@ -506,7 +506,7 @@ function parseAIAnalysis(
             sectionName: section?.name || name,
             category: section?.category || 'Unknown',
             required: section?.required || false,
-            recommendation: `Add section: ${section?.name || name}`,
+            // recommendation: `Add section: ${section?.name || name}`,
         };
     });
 
