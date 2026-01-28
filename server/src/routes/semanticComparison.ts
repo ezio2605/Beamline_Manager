@@ -126,7 +126,7 @@ router.post('/:documentId/analyze', async (req: Request, res: Response) => {
         if (vectorDocs.length === 0) {
             return res.status(404).json({
                 success: false,
-                error: 'Document not found',
+                error: 'Document not found or not indexed',
             });
         }
 
@@ -142,59 +142,30 @@ router.post('/:documentId/analyze', async (req: Request, res: Response) => {
             });
         }
 
-        // Reconstruct document content from chunks
-        const documentContent = vectorDocs.map(doc => doc.content).join('\n\n');
-
-        // Start Long Context analysis (async)
+        // Start Category-based RAG analysis (async)
         setImmediate(async () => {
             try {
-                console.log(`🤖 Starting Long Context analysis for document ${documentId}...`);
+                // Import dynamically to avoid circular deps if any (though unlikely here)
+                const { SemanticAnalysisService } = await import('../services/SemanticAnalysisService.js');
 
-                // Create a single prompt with the entire document content
-                const analysisPrompt = buildFullDocumentAnalysisPrompt(
-                    documentContent,
+                const report = await SemanticAnalysisService.analyzeDocument(
+                    documentId,
+                    beamlineId,
                     standardStructure,
                     vendor
                 );
 
-                const model = vertexAI.getGenerativeModel({
-                    model: 'gemini-2.0-flash-exp', // Using 1.5 Pro for larger context window and better reasoning
-                    generationConfig: {
-                        temperature: 0.2,
-                        maxOutputTokens: 8192,
-                    }
-                });
-
-                const result = await model.generateContent(analysisPrompt);
-                const aiResponse = result.response.candidates?.[0]?.content?.parts?.[0]?.text || '';
-
-                // Get similar documents from vector store for context (optional, metadata use)
-                const similarDocs = await VectorSearchService.searchSimilar(
-                    vectorDocs[0].content.substring(0, 1000),
-                    beamlineId,
-                    3
-                );
-
-                // Parse AI response and generate report
-                const report = parseFullDocumentAIAnalysis(
-                    aiResponse,
-                    documentId,
-                    beamlineId,
-                    standardStructure,
-                    similarDocs
-                );
-
                 await FirestoreService.saveMissingElementsReport(report);
 
-                console.log(`✅ Long Context analysis complete for document ${documentId}`);
+                console.log(`✅ Analysis complete for document ${documentId}`);
             } catch (error) {
-                console.error(`Error during Long Context analysis for document ${documentId}:`, error);
+                console.error(`Error during analysis for document ${documentId}:`, error);
             }
         });
 
         res.status(202).json({
             success: true,
-            message: 'Analysis started',
+            message: 'Analysis started (Category-based RAG)',
         });
     } catch (error) {
         console.error('Error starting analysis:', error);
