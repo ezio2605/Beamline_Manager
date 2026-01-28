@@ -205,7 +205,10 @@ export class FirestoreService {
     /**
      * Calculate cosine similarity between two vectors
      */
-    private static cosineSimilarity(a: number[], b: number[]): number {
+    /**
+     * Calculate cosine similarity between two vectors
+     */
+    static cosineSimilarity(a: number[], b: number[]): number {
         if (a.length !== b.length) return 0;
 
         let dotProduct = 0;

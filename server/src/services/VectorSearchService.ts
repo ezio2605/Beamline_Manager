@@ -92,6 +92,34 @@ export class VectorSearchService {
     }
 
     /**
+     * Search within a provided list of vectors
+     * This is useful when we already have the vectors for specific files
+     */
+    static async searchInVectors(
+        query: string,
+        vectors: VectorDocument[],
+        topK: number = 5
+    ): Promise<SimilarDocument[]> {
+        // Generate embedding for query
+        const queryEmbedding = await EmbeddingService.generateEmbedding(query);
+
+        // Calculate similarity for each vector
+        const results = vectors.map(vec => ({
+            document: vec,
+            score: FirestoreService['cosineSimilarity'](queryEmbedding, vec.embedding),
+        }));
+
+        // Sort by score descending and return top K
+        return results
+            .sort((a, b) => b.score - a.score)
+            .slice(0, topK)
+            .map((result, index) => ({
+                ...result,
+                rank: index + 1,
+            }));
+    }
+
+    /**
      * Find the most similar JASRI document for a Nichi file
      */
     static async findMostSimilarJasriDocument(
