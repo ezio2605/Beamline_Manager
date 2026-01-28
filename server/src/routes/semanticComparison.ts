@@ -158,7 +158,7 @@ router.post('/:documentId/analyze', async (req: Request, res: Response) => {
                 );
 
                 const model = vertexAI.getGenerativeModel({
-                    model: 'gemini-1.5-pro-001', // Using 1.5 Pro for larger context window and better reasoning
+                    model: 'gemini-1.5-pro', // Using 1.5 Pro for larger context window and better reasoning
                     generationConfig: {
                         temperature: 0.2,
                         maxOutputTokens: 8192,
@@ -275,7 +275,7 @@ router.post('/analyze-batch', async (req: Request, res: Response) => {
                 );
 
                 const model = vertexAI.getGenerativeModel({
-                    model: 'gemini-1.5-pro-001',
+                    model: 'gemini-1.5-pro',
                     generationConfig: {
                         temperature: 0.2,
                         maxOutputTokens: 8192,
