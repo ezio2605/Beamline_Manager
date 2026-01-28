@@ -145,53 +145,28 @@ router.post('/:documentId/analyze', async (req: Request, res: Response) => {
         // Reconstruct document content from chunks
         const documentContent = vectorDocs.map(doc => doc.content).join('\n\n');
 
-        // Start Multi-stage RAG-based analysis process (async)
+        // Start Long Context analysis (async)
         setImmediate(async () => {
             try {
-                console.log(`🤖 Starting Multi-stage RAG analysis for document ${documentId}...`);
+                console.log(`🤖 Starting Long Context analysis for document ${documentId}...`);
 
-                // Group sections by category
-                const categoryMap = new Map<string, any[]>();
-                standardStructure.sections.forEach((s: any) => {
-                    if (!categoryMap.has(s.category)) {
-                        categoryMap.set(s.category, []);
+                // Create a single prompt with the entire document content
+                const analysisPrompt = buildFullDocumentAnalysisPrompt(
+                    documentContent,
+                    standardStructure,
+                    vendor
+                );
+
+                const model = vertexAI.getGenerativeModel({
+                    model: 'gemini-1.5-pro-001', // Using 1.5 Pro for larger context window and better reasoning
+                    generationConfig: {
+                        temperature: 0.2,
+                        maxOutputTokens: 8192,
                     }
-                    categoryMap.get(s.category)!.push(s);
                 });
 
-                const categoryReports: string[] = [];
-
-                // Analyze each category
-                for (const [category, sections] of categoryMap.entries()) {
-                    console.log(`🔍 Analyzing category: ${category}...`);
-
-                    // Search for relevant chunks for THIS category
-                    const categoryQuery = `${category} ${sections.map(s => s.name).join(' ')}`;
-                    const relevantChunks = await VectorSearchService.searchInVectors(categoryQuery, vectorDocs, 10);
-                    const context = relevantChunks.map(doc => doc.document.content).join('\n\n');
-
-                    const categoryPrompt = buildCategoryAnalysisPrompt(
-                        category,
-                        sections,
-                        context,
-                        vendor,
-                        standardStructure.name
-                    );
-
-                    const model = vertexAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
-                    const result = await model.generateContent(categoryPrompt);
-                    const aiCategoryResponse = result.response.candidates?.[0]?.content?.parts?.[0]?.text || '';
-
-                    categoryReports.push(aiCategoryResponse);
-                }
-
-                // Synthesize final report
-                console.log(`Finalizing report for document ${documentId}...`);
-                const synthesisPrompt = buildSynthesisPrompt(categoryReports, standardStructure, vendor);
-
-                const model = vertexAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
-                const finalResult = await model.generateContent(synthesisPrompt);
-                const aiFinalResponse = finalResult.response.candidates?.[0]?.content?.parts?.[0]?.text || '';
+                const result = await model.generateContent(analysisPrompt);
+                const aiResponse = result.response.candidates?.[0]?.content?.parts?.[0]?.text || '';
 
                 // Get similar documents from vector store for context (optional, metadata use)
                 const similarDocs = await VectorSearchService.searchSimilar(
@@ -201,8 +176,8 @@ router.post('/:documentId/analyze', async (req: Request, res: Response) => {
                 );
 
                 // Parse AI response and generate report
-                const report = parseAIAnalysis(
-                    aiFinalResponse,
+                const report = parseFullDocumentAIAnalysis(
+                    aiResponse,
                     documentId,
                     beamlineId,
                     standardStructure,
@@ -211,9 +186,9 @@ router.post('/:documentId/analyze', async (req: Request, res: Response) => {
 
                 await FirestoreService.saveMissingElementsReport(report);
 
-                console.log(`✅ Multi-stage RAG analysis complete for document ${documentId}`);
+                console.log(`✅ Long Context analysis complete for document ${documentId}`);
             } catch (error) {
-                console.error(`Error during Multi-stage RAG analysis for document ${documentId}:`, error);
+                console.error(`Error during Long Context analysis for document ${documentId}:`, error);
             }
         });
 
@@ -278,57 +253,37 @@ router.post('/analyze-batch', async (req: Request, res: Response) => {
             });
         }
 
-        // Start combined Multi-stage RAG-based analysis process (async)
+        // Start combined Long Context analysis (async)
         setImmediate(async () => {
             try {
-                console.log(`🤖 Starting combined Multi-stage RAG-based analysis for ${documentIds.length} documents...`);
+                console.log(`🤖 Starting combined Long Context analysis for ${documentIds.length} documents...`);
 
-                // Group sections by category
-                const categoryMap = new Map<string, any[]>();
-                standardStructure.sections.forEach((s: any) => {
-                    if (!categoryMap.has(s.category)) {
-                        categoryMap.set(s.category, []);
+                // Construct full content from all documents
+                const fullContent = documentMetadata.map(meta => {
+                    const docVectors = allVectorDocs.filter(v => v.fileId === meta.documentId);
+                    const content = docVectors.map(v => v.content).join('\n');
+                    return `DOCUMENT START: ${meta.filename} (Vendor: ${meta.vendor})\n${content}\nDOCUMENT END`;
+                }).join('\n\n');
+
+                const vendorList = [...new Set(documentMetadata.map(m => m.vendor))].join(', ');
+
+                const analysisPrompt = buildCombinedFullAnalysisPrompt(
+                    fullContent,
+                    standardStructure,
+                    vendorList,
+                    documentMetadata
+                );
+
+                const model = vertexAI.getGenerativeModel({
+                    model: 'gemini-1.5-pro-001',
+                    generationConfig: {
+                        temperature: 0.2,
+                        maxOutputTokens: 8192,
                     }
-                    categoryMap.get(s.category)!.push(s);
                 });
 
-                const categoryReports: string[] = [];
-
-                // Analyze each category across ALL documents
-                for (const [category, sections] of categoryMap.entries()) {
-                    console.log(`🔍 Combined Analysis - Category: ${category}...`);
-
-                    // Search across all selected documents for this category
-                    const categoryQuery = `${category} ${sections.map(s => s.name).join(' ')}`;
-                    const relevantChunks = await VectorSearchService.searchInVectors(categoryQuery, allVectorDocs, 15);
-                    const context = relevantChunks.map(doc => {
-                        const filename = doc.document.metadata?.filename || 'Unknown';
-                        return `[Source: ${filename}]: ${doc.document.content}`;
-                    }).join('\n\n');
-
-                    const categoryPrompt = buildCombinedCategoryAnalysisPrompt(
-                        category,
-                        sections,
-                        context,
-                        documentMetadata,
-                        standardStructure.name
-                    );
-
-                    const model = vertexAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
-                    const result = await model.generateContent(categoryPrompt);
-                    const aiCategoryResponse = result.response.candidates?.[0]?.content?.parts?.[0]?.text || '';
-
-                    categoryReports.push(aiCategoryResponse);
-                }
-
-                // Synthesize final report
-                const vendorList = [...new Set(documentMetadata.map(m => m.vendor))].join(', ');
-                console.log(`Finalizing combined report for ${documentIds.length} documents...`);
-                const synthesisPrompt = buildSynthesisPrompt(categoryReports, standardStructure, vendorList);
-
-                const model = vertexAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
-                const finalResult = await model.generateContent(synthesisPrompt);
-                const aiFinalResponse = finalResult.response.candidates?.[0]?.content?.parts?.[0]?.text || '';
+                const result = await model.generateContent(analysisPrompt);
+                const aiResponse = result.response.candidates?.[0]?.content?.parts?.[0]?.text || '';
 
                 // Get similar documents from vector store for context (general context)
                 const similarDocs = await VectorSearchService.searchSimilar(
@@ -341,8 +296,8 @@ router.post('/analyze-batch', async (req: Request, res: Response) => {
                 const sortedIds = [...documentIds].sort();
                 const combinedId = `combined_${sortedIds.join('_')}`;
 
-                const report = parseAIAnalysis(
-                    aiFinalResponse,
+                const report = parseFullDocumentAIAnalysis(
+                    aiResponse,
                     combinedId,
                     beamlineId,
                     standardStructure,
@@ -356,9 +311,9 @@ router.post('/analyze-batch', async (req: Request, res: Response) => {
 
                 await FirestoreService.saveCombinedReport(report);
 
-                console.log(`✅ Combined Multi-stage RAG-based analysis complete for ${documentIds.length} documents`);
+                console.log(`✅ Combined Long Context analysis complete for ${documentIds.length} documents`);
             } catch (error) {
-                console.error(`Error during combined multi-stage RAG analysis:`, error);
+                console.error(`Error during combined Long Context analysis:`, error);
             }
         });
 
@@ -380,130 +335,34 @@ router.post('/analyze-batch', async (req: Request, res: Response) => {
 });
 
 /**
- * Helper: Build AI analysis prompt for a specific CATEGORY against MULTIPLE documents
+ * Helper: Build AI analysis prompt for the FULL DOCUMENT
  */
-function buildCombinedCategoryAnalysisPrompt(
-    category: string,
-    sections: any[],
+function buildFullDocumentAnalysisPrompt(
     content: string,
-    documentMetadata: any[],
-    standardStructureName: string
-): string {
-    const sectionsText = sections.map((s: any) =>
-        `- ${s.name} (${s.required ? 'REQUIRED' : 'Optional'}): ${s.description || 'No description'}`
-    ).join('\n');
-
-    const docList = documentMetadata.map((doc, idx) =>
-        `${idx + 1}. ${doc.filename} (${doc.vendor})`
-    ).join('\n');
-
-    return `You are analyzing multiple beamline operation manuals COLLECTIVELY for sections in the category: **${category}**.
-
-**Documents Being Analyzed**:
-${docList}
-
-**Standard Structure**: ${standardStructureName}
-
-**Target Sections in this Category**:
-${sectionsText}
-
-**Relevant Document Content** (Combined context for this category from all documents):
-${content}
-
-**Your Task**:
-Analyze these manuals and determine which of the target sections are present in at least one of them.
-
-**Response Format**:
-Respond ONLY with this format:
-
-FOUND_SECTIONS:
-[List section names that are present, one per line]
-
-MISSING_SECTIONS:
-[List section names that are missing, one per line]
-
-INSIGHTS:
-[Provide detailed insights about the quality and completeness for these specific sections across the document set]
-
-RECOMMENDATIONS:
-[Provide specific recommendations for these sections]`;
-}
-
-
-/**
- * Helper: Build AI analysis prompt for a specific CATEGORY against the document(s)
- */
-function buildCategoryAnalysisPrompt(
-    category: string,
-    sections: any[],
-    content: string,
-    vendor: string,
-    standardStructureName: string
-): string {
-    const sectionsText = sections.map((s: any) =>
-        `- ${s.name} (${s.required ? 'REQUIRED' : 'Optional'}): ${s.description || 'No description'}`
-    ).join('\n');
-
-    return `You are analyzing a beamline operation manual specifically for sections in the category: **${category}**.
-
-**Vendor**: ${vendor}
-**Standard Structure**: ${standardStructureName}
-
-**Target Sections in this Category**:
-${sectionsText}
-
-**Relevant Document Content** (Full context for this category):
-${content}
-
-**Your Task**:
-Analyze this content and determine which of the target sections are present or missing.
-
-**Response Format**:
-Respond ONLY with this format:
-
-FOUND_SECTIONS:
-[List section names that are present, one per line]
-
-MISSING_SECTIONS:
-[List section names that are missing, one per line]
-
-INSIGHTS:
-[Provide detailed insights about the quality and completeness for these specific sections]
-
-RECOMMENDATIONS:
-[Provide specific recommendations for these sections]`;
-}
-
-/**
- * Helper: Build overall synthesis prompt
- */
-function buildSynthesisPrompt(
-    categoryReports: string[],
     standardStructure: any,
     vendor: string
 ): string {
     const allSections = standardStructure.sections.map((s: any) =>
-        `- ${s.name} (${s.category})`
+        `- ${s.name} (${s.required ? 'REQUIRED' : 'Optional'}, Category: ${s.category}): ${s.description || 'No description'}`
     ).join('\n');
 
-    return `You are synthesizing multiple category-specific analyses of a beamline operation manual into one final report.
-
+    return `You are analyzing a beamline operation manual.
+    
 **Vendor**: ${vendor}
 **Standard Structure**: ${standardStructure.name} v${standardStructure.version}
 
 **All Required Sections**:
 ${allSections}
 
-**Category Feedbacks**:
-${categoryReports.join('\n\n---\n\n')}
+**Document Content**:
+${content}
 
 **Your Task**:
-Create a final, comprehensive report. 
-1. Re-evaluate coverage across ALL sections.
-2. Provide a single cumulative COUNTER for coverage percentage.
-3. Summarize key insights and top recommendations.
+Analyze the entire manual and determine which of the target sections are present or missing.
 
 **Response Format**:
+Respond ONLY with this format:
+
 COVERAGE_PERCENTAGE: [0-100]
 
 FOUND_SECTIONS:
@@ -520,6 +379,76 @@ KEY_INSIGHTS:
 
 RECOMMENDATIONS:
 [Top prioritized recommendations]`;
+}
+
+/**
+ * Helper: Build AI analysis prompt for COMBINED analysis of MULTIPLE documents
+ */
+function buildCombinedFullAnalysisPrompt(
+    content: string,
+    standardStructure: any,
+    vendorList: string,
+    documentMetadata: any[]
+): string {
+    const allSections = standardStructure.sections.map((s: any) =>
+        `- ${s.name} (${s.required ? 'REQUIRED' : 'Optional'}, Category: ${s.category}): ${s.description || 'No description'}`
+    ).join('\n');
+
+    const docList = documentMetadata.map((doc, idx) =>
+        `${idx + 1}. ${doc.filename} (Vendor: ${doc.vendor})`
+    ).join('\n');
+
+    return `You are analyzing multiple beamline operation manuals COLLECTIVELY.
+
+**Documents Being Analyzed**:
+${docList}
+
+**Vendors Involved**: ${vendorList}
+**Standard Structure**: ${standardStructure.name} v${standardStructure.version}
+
+**All Required Sections**:
+${allSections}
+
+**Combined Document Content**:
+${content}
+
+**Your Task**:
+Analyze these manuals and determine which of the target sections are present in at least one of them.
+
+**Response Format**:
+Respond ONLY with this format:
+
+COVERAGE_PERCENTAGE: [0-100]
+
+FOUND_SECTIONS:
+[List ALL section names found, one per line]
+
+MISSING_SECTIONS:
+[List ALL section names missing, one per line]
+
+CATEGORY_BREAKDOWN:
+[For each category: CategoryName: X/Y found (Z%)]
+
+KEY_INSIGHTS:
+[Overall manual quality summary across all documents]
+
+RECOMMENDATIONS:
+[Top prioritized recommendations]`;
+}
+
+/**
+ * Helper: Parse Full Document AI analysis response into a missing elements report
+ * (Reuses much of the logic from the old parseAIAnalysis, but adapted if needed)
+ */
+function parseFullDocumentAIAnalysis(
+    aiResponse: string,
+    documentId: string,
+    beamlineId: string,
+    standardStructure: any,
+    similarDocs: any[]
+): any {
+    // Re-use the parsing logic as the output format is designed to be compatible
+    return parseAIAnalysis(aiResponse, documentId, beamlineId, standardStructure, similarDocs);
 }
 
 /**
