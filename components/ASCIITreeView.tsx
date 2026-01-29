@@ -501,9 +501,9 @@ const ASCIITreeView: React.FC<ASCIITreeViewProps> = ({
 
     return (
         <div className="w-full h-full overflow-auto bg-white p-6">
-            <div className="mb-4 pb-4 border-b-2 border-slate-200 flex items-center justify-between">
+            <div className="mb-4 flex items-center justify-between">
                 <div>
-                    <h2 className="text-2xl font-black text-slate-900 mb-2">ASCII Tree View</h2>
+                    {/* <h2 className="text-2xl font-black text-slate-900 mb-2">ASCII Tree View</h2> */}
                 </div>
                 <button
                     onClick={exportAsPDF}

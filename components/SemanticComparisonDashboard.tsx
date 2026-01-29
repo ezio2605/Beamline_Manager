@@ -499,19 +499,19 @@ const SemanticComparisonDashboard: React.FC<SemanticComparisonDashboardProps> = 
                             {documents.map(doc => (
                                 <div
                                     key={doc.documentId}
-                                    className={`bg-white rounded-lg border-2 p-4 transition-all ${selectedDocIds.includes(doc.documentId)
+                                    className={`bg-white rounded-lg border-2 p-2 transition-all ${selectedDocIds.includes(doc.documentId)
                                         ? 'border-indigo-500 bg-indigo-50'
                                         : 'border-slate-200 hover:border-slate-300'
                                         }`}
                                 >
                                     <div className="flex items-start gap-3 mb-2">
                                         {doc.status === 'uploaded' && (
-                                            <div className="flex items-center justify-center pt-1">
+                                            <div className="flex items-center justify-center pt-0.5">
                                                 <input
                                                     type="checkbox"
                                                     checked={selectedDocs.has(doc.documentId)}
                                                     onChange={() => toggleDocSelection(doc.documentId)}
-                                                    className="w-5 h-5 text-green-600 border-2 border-slate-400 rounded focus:ring-2 focus:ring-green-500 cursor-pointer hover:border-green-500 transition-colors"
+                                                    className="w-4 h-4 text-green-600 border-2 border-slate-400 rounded focus:ring-2 focus:ring-green-500 cursor-pointer hover:border-green-500 transition-colors"
                                                     onClick={(e) => e.stopPropagation()}
                                                     title="Select for batch analysis"
                                                 />
@@ -521,21 +521,21 @@ const SemanticComparisonDashboard: React.FC<SemanticComparisonDashboardProps> = 
                                             className="flex-1 cursor-pointer"
                                             onClick={() => doc.status === 'complete' && loadReport(doc.documentId)}
                                         >
-                                            <div className="flex items-start justify-between mb-2">
+                                            <div className="flex items-start justify-between mb-1">
                                                 <div className="flex-1">
-                                                    <h3 className="font-bold text-slate-800">{doc.filename}</h3>
-                                                    <p className="text-sm text-slate-600">{doc.beamlineId}</p>
+                                                    <h3 className="text-sm font-bold text-slate-800 leading-tight">{doc.filename}</h3>
+                                                    <p className="text-xs text-slate-600">{doc.beamlineId}</p>
                                                 </div>
-                                                <div className="flex items-center gap-2">
+                                                <div className="flex items-center gap-1">
 
                                                     <button
                                                         onClick={(e) => {
                                                             e.stopPropagation();
                                                             deleteDocument(doc.documentId);
                                                         }}
-                                                        className="text-red-600 hover:text-red-800"
+                                                        className="text-red-500 hover:text-red-700 p-1"
                                                     >
-                                                        <i className="fa-solid fa-trash"></i>
+                                                        <i className="fa-solid fa-trash text-sm"></i>
                                                     </button>
                                                 </div>
                                             </div>

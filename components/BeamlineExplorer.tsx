@@ -528,21 +528,13 @@ const BeamlineExplorer: React.FC = () => {
             <button
               key={bl.name}
               onClick={() => setSelectedBeamline(bl.data)}
-              // className="group bg-white p-10 rounded-[3rem] border border-slate-100 shadow-sm hover:shadow-3xl hover:border-indigo-500 hover:-translate-y-3 transition-all text-left flex flex-col h-72 relative overflow-hidden"
-              className="group bg-white p-6 rounded-2xl border border-slate-100 shadow-sm hover:shadow-3xl hover:border-indigo-500 hover:-translate-y-3 transition-all text-left flex flex-col h-48 relative overflow-hidden"
+              className="group bg-white p-4 rounded-xl border border-slate-100 shadow-sm hover:shadow-3xl hover:border-indigo-500 hover:-translate-y-2 transition-all text-left flex flex-col h-32 relative overflow-hidden"
             >
-              <div className="absolute -right-8 -top-8 w-32 h-32 bg-indigo-50/50 rounded-full group-hover:scale-150 transition-transform duration-1000"></div>
-              {/* <div className="w-16 h-16 bg-slate-900 rounded-2xl flex items-center justify-center mb-8 shadow-2xl relative z-10 transition-colors group-hover:bg-indigo-600">
-                <i className="fa-solid fa-folder-tree text-white text-2xl"></i>
-              </div> */}
-              <h3 className="text-2xl font-black text-slate-900 mb-3 relative z-10">{bl.name}</h3>
-              <p className="text-sm text-slate-400 font-bold leading-relaxed flex-grow relative z-10">
+              <div className="absolute -right-6 -top-6 w-24 h-24 bg-indigo-50/50 rounded-full group-hover:scale-150 transition-transform duration-1000"></div>
+              <h3 className="text-lg font-black text-slate-900 mb-1 relative z-10">{bl.name}</h3>
+              <p className="text-[11px] text-slate-400 font-bold leading-tight flex-grow relative z-10 line-clamp-3">
                 {bl.description || "Master operational framework for experimental physics and safety SOPs."}
               </p>
-              {/* <div className="mt-4 flex items-center justify-between relative z-10 border-t border-slate-50 pt-4">
-                <span className="text-[10px] font-black text-indigo-600 tracking-[0.2em] uppercase">Open Architecture</span>
-                <i className="fa-solid fa-chevron-right text-indigo-400 group-hover:translate-x-2 transition-transform"></i>
-              </div> */}
             </button>
           ))}
         </div>
