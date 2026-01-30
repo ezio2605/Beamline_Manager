@@ -20,7 +20,7 @@ export class VectorSearchService {
         metadata: Record<string, any> = {}
     ): Promise<void> {
         // Chunk the document
-        const chunks = FileProcessorService.chunkText(content);
+        const chunks = await FileProcessorService.chunkText(content);
         console.log(`📄 Chunked document into ${chunks.length} pieces`);
 
         // Generate embeddings for each chunk

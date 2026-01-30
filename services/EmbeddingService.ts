@@ -1,6 +1,6 @@
 // Embedding Service for RAG - Handles document embeddings using Gemini
 import { GoogleGenerativeAIEmbeddings } from '@langchain/google-genai';
-import { RecursiveCharacterTextSplitter } from 'langchain/text_splitter';
+import { TokenTextSplitter } from 'langchain/text_splitter';
 import { Document } from '@langchain/core/documents';
 
 export interface DocumentChunk {
@@ -16,7 +16,7 @@ export interface DocumentChunk {
 
 export class EmbeddingService {
     private embeddings: GoogleGenerativeAIEmbeddings;
-    private textSplitter: RecursiveCharacterTextSplitter;
+    private textSplitter: TokenTextSplitter;
 
     constructor(apiKey: string) {
         // Initialize Gemini embeddings
@@ -25,11 +25,12 @@ export class EmbeddingService {
             modelName: 'embedding-001', // Gemini embedding model
         });
 
-        // Initialize text splitter for chunking documents
-        this.textSplitter = new RecursiveCharacterTextSplitter({
+        // Initialize token splitter for chunking documents
+        // Defaults to gpt2 tokenizer if no encoding is provided, which is close enough for general use
+        this.textSplitter = new TokenTextSplitter({
             chunkSize: 1000,
             chunkOverlap: 200,
-            separators: ['\n\n', '\n', '. ', ' ', ''],
+            encodingName: 'cl100k_base', // Modern encoding used by OpenAI models, good proxy for general tokenization
         });
     }
 

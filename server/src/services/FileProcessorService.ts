@@ -1,5 +1,6 @@
 import pdfParse from 'pdf-parse';
 import mammoth from 'mammoth';
+import { TokenTextSplitter } from 'langchain/text_splitter';
 
 export interface ProcessedDocument {
     filename: string;
@@ -19,7 +20,7 @@ export class FileProcessorService {
     static async processPDF(buffer: Buffer, filename: string): Promise<ProcessedDocument> {
         const data = await pdfParse(buffer);
 
-        const chunks = this.chunkText(data.text);
+        const chunks = await this.chunkText(data.text);
 
         return {
             filename,
@@ -40,7 +41,7 @@ export class FileProcessorService {
         const result = await mammoth.extractRawText({ buffer });
         const text = result.value;
 
-        const chunks = this.chunkText(text);
+        const chunks = await this.chunkText(text);
 
         return {
             filename,
@@ -58,7 +59,7 @@ export class FileProcessorService {
      */
     static async processTXT(buffer: Buffer, filename: string): Promise<ProcessedDocument> {
         const text = buffer.toString('utf-8');
-        const chunks = this.chunkText(text);
+        const chunks = await this.chunkText(text);
 
         return {
             filename,
@@ -95,44 +96,26 @@ export class FileProcessorService {
         }
     }
 
+
     /**
-     * Chunk text into smaller pieces for embedding
-     * Uses a simple sliding window approach
+     * Chunk text into smaller pieces for embedding using TokenTextSplitter
      */
-    static chunkText(text: string, chunkSize: number = 1000, overlap: number = 200): string[] {
-        // Clean the text
+    static async chunkText(text: string, chunkSize: number = 1000, overlap: number = 200): Promise<string[]> {
+        // Clean the text first
         const cleanedText = text
             .replace(/\s+/g, ' ')
             .replace(/\n+/g, '\n')
             .trim();
 
-        if (cleanedText.length <= chunkSize) {
-            return [cleanedText];
-        }
+        if (!cleanedText) return [];
 
-        const chunks: string[] = [];
-        let start = 0;
+        const splitter = new TokenTextSplitter({
+            chunkSize,
+            chunkOverlap: overlap,
+            encodingName: 'cl100k_base',
+        });
 
-        while (start < cleanedText.length) {
-            const end = Math.min(start + chunkSize, cleanedText.length);
-            let chunk = cleanedText.slice(start, end);
-
-            // Try to break at sentence boundary
-            if (end < cleanedText.length) {
-                const lastPeriod = chunk.lastIndexOf('.');
-                const lastNewline = chunk.lastIndexOf('\n');
-                const breakPoint = Math.max(lastPeriod, lastNewline);
-
-                if (breakPoint > chunkSize / 2) {
-                    chunk = chunk.slice(0, breakPoint + 1);
-                }
-            }
-
-            chunks.push(chunk.trim());
-            start += chunkSize - overlap;
-        }
-
-        return chunks.filter(chunk => chunk.length > 0);
+        return await splitter.splitText(cleanedText);
     }
 
     /**
