@@ -6,6 +6,7 @@ const storage = new Storage({
 
 const JASRI_BUCKET_NAME = process.env.JASRI_BUCKET_NAME || 'jasri-knowledge-base';
 const NICHI_BUCKET_NAME = process.env.NICHI_BUCKET_NAME || 'nichi-uploads';
+const OTHERS_BUCKET_NAME = process.env.OTHERS_BUCKET_NAME || 'others-uploads';
 
 export class CloudStorageService {
     /**
@@ -128,6 +129,7 @@ export class CloudStorageService {
     static async initialize(): Promise<void> {
         await this.ensureBucketExists(JASRI_BUCKET_NAME);
         await this.ensureBucketExists(NICHI_BUCKET_NAME);
+        await this.ensureBucketExists(OTHERS_BUCKET_NAME);
         console.log('✅ Cloud Storage initialized');
     }
 }

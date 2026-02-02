@@ -71,10 +71,10 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onViewChange }) =
           <button
             onClick={() => onViewChange(ViewState.SEMANTIC_COMPARISON)}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${activeView === ViewState.SEMANTIC_COMPARISON ? 'bg-indigo-600 shadow-lg' : 'hover:bg-slate-800'} ${isSidebarCollapsed ? 'justify-center' : ''}`}
-            title={isSidebarCollapsed ? 'Semantic Comparison' : ''}
+            title={isSidebarCollapsed ? 'Structure Comparison' : ''}
           >
-            <i className="fa-solid fa-brain w-5"></i>
-            {!isSidebarCollapsed && <span>Semantic Comparison</span>}
+            <i className="fa-solid fa-sitemap w-5"></i>
+            {!isSidebarCollapsed && <span>Structure Comparison</span>}
           </button>
 
           <button
@@ -82,7 +82,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onViewChange }) =
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${activeView === ViewState.STANDARD_STRUCTURE ? 'bg-indigo-600 shadow-lg' : 'hover:bg-slate-800'} ${isSidebarCollapsed ? 'justify-center' : ''}`}
             title={isSidebarCollapsed ? 'Standard Structure' : ''}
           >
-            <i className="fa-solid fa-sitemap w-5"></i>
+            <i className="fa-solid fa-folder-tree w-5"></i>
             {!isSidebarCollapsed && <span>Standard Structure</span>}
           </button>
         </nav>

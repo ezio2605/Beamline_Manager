@@ -343,7 +343,7 @@ const SemanticComparisonDashboard: React.FC<SemanticComparisonDashboardProps> = 
         <div className="p-10 max-w-7xl mx-auto">
             {/* Header */}
             <div className="mb-8">
-                <h1 className="text-4xl font-extrabold text-slate-900 mb-2">Semantic Manual Comparison</h1>
+                <h1 className="text-4xl font-extrabold text-slate-900 mb-2">Manual Structure Comparison</h1>
                 {/* <p className="text-slate-600">Upload and analyze beamline manuals against standard structure</p> */}
             </div>
 
@@ -417,16 +417,16 @@ const SemanticComparisonDashboard: React.FC<SemanticComparisonDashboardProps> = 
                         </select>
                     </div>
                     <div>
-                        <div className="flex items-center justify-between mb-2">
-                            <label className="block text-sm font-bold text-slate-700">Vendor</label>
-                            <label className="flex items-center gap-2 cursor-pointer">
-                                <input
-                                    type="checkbox"
-                                    checked={hasVendor}
-                                    onChange={(e) => setHasVendor(e.target.checked)}
-                                    className="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500"
-                                />
-                                <span className="text-xs font-medium text-slate-600">Has Vendor</span>
+                        <div className="flex items-center gap-2 mb-2">
+                            <input
+                                id="hasVendorToggle"
+                                type="checkbox"
+                                checked={hasVendor}
+                                onChange={(e) => setHasVendor(e.target.checked)}
+                                className="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500 cursor-pointer"
+                            />
+                            <label htmlFor="hasVendorToggle" className="block text-sm font-bold text-slate-700 cursor-pointer">
+                                Vendor
                             </label>
                         </div>
                         <select
