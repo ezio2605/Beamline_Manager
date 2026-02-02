@@ -43,13 +43,16 @@ router.post('/upload/jasri', upload.array('files', 10), async (req, res) => {
         const uploadedFiles: FileMetadata[] = [];
 
         for (const file of files) {
+            // Re-encode filename from latin1 to utf8
+            const filename = Buffer.from(file.originalname, 'latin1').toString('utf8');
+
             // Upload to Cloud Storage
             const storagePath = await CloudStorageService.uploadJasriFile(beamlineId, file);
 
             // Create file metadata
             const fileMetadata: FileMetadata = {
                 id: uuidv4(),
-                filename: file.originalname,
+                filename: filename,
                 beamlineId,
                 fileType: 'jasri',
                 storagePath,
@@ -95,13 +98,16 @@ router.post('/upload/nichi', upload.array('files', 10), async (req, res) => {
         const uploadedFiles: FileMetadata[] = [];
 
         for (const file of files) {
+            // Re-encode filename from latin1 to utf8
+            const filename = Buffer.from(file.originalname, 'latin1').toString('utf8');
+
             // Upload to Cloud Storage
             const storagePath = await CloudStorageService.uploadNichiFile(beamlineId, file);
 
             // Create file metadata
             const fileMetadata: FileMetadata = {
                 id: uuidv4(),
-                filename: file.originalname,
+                filename: filename,
                 beamlineId,
                 fileType: 'nichi',
                 storagePath,

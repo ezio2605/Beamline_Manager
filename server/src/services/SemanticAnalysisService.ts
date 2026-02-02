@@ -143,7 +143,7 @@ export class SemanticAnalysisService {
 
         // 2. Build Prompt
         const prompt = `
-You are analyzing a beamline operation manual (Vendor: ${params.vendor}).
+You are analyzing a beamline operation manual${params.vendor && params.vendor !== 'None' && params.vendor !== 'Not Specified' ? ` (Vendor: ${params.vendor})` : ''}.
 Target Structure: ${params.standardStructureName}
 Category to Analyze: **${params.category}**
 

@@ -33,6 +33,7 @@ router.post('/upload', upload.single('file'), async (req: Request, res: Response
         }
 
         const { beamlineId, vendor } = req.body;
+        const displayVendor = (vendor === 'None' || !vendor) ? 'Not Specified' : vendor;
 
         if (!beamlineId) {
             return res.status(400).json({
@@ -42,13 +43,13 @@ router.post('/upload', upload.single('file'), async (req: Request, res: Response
         }
 
         const documentId = uuidv4();
-        const filename = req.file.originalname;
+        const filename = Buffer.from(req.file.originalname, 'latin1').toString('utf8');
 
         // Upload file to Cloud Storage - use vendor-specific buckets
         let bucketName: string;
-        if (vendor === 'JASRI') {
+        if (displayVendor === 'JASRI') {
             bucketName = process.env.JASRI_BUCKET_NAME || 'jasri-uploads';
-        } else if (vendor === 'Nichigi') {
+        } else if (displayVendor === 'Nichigi') {
             bucketName = process.env.NICHI_BUCKET_NAME || 'nichi-uploads';
         } else {
             bucketName = process.env.OTHERS_BUCKET_NAME || 'others-uploads';
@@ -81,7 +82,7 @@ router.post('/upload', upload.single('file'), async (req: Request, res: Response
             processedDoc.content,
             {
                 filename: filename,
-                vendor: vendor,
+                vendor: displayVendor,
                 uploadedAt: new Date().toISOString(),
             }
         );
@@ -131,7 +132,7 @@ router.post('/:documentId/analyze', async (req: Request, res: Response) => {
         }
 
         const beamlineId = vectorDocs[0].beamlineId;
-        const vendor = vectorDocs[0].metadata?.vendor || 'Unknown';
+        const vendor = vectorDocs[0].metadata?.vendor || 'Not Specified';
 
         // Get active standard structure
         const standardStructure = await StandardStructureService.getActiveStructure();
@@ -211,7 +212,7 @@ router.post('/analyze-batch', async (req: Request, res: Response) => {
                 documentId: docId,
                 filename: docVectors[0]?.metadata?.filename || 'Unknown',
                 beamlineId: docVectors[0]?.beamlineId || beamlineId,
-                vendor: docVectors[0]?.metadata?.vendor || 'Unknown',
+                vendor: docVectors[0]?.metadata?.vendor || 'Not Specified',
             };
         });
 
@@ -319,7 +320,7 @@ function buildFullDocumentAnalysisPrompt(
 
     return `You are analyzing a beamline operation manual.
     
-**Vendor**: ${vendor}
+**Vendor**: ${vendor || 'Not Specified'}
 **Standard Structure**: ${standardStructure.name} v${standardStructure.version}
 
 **All Required Sections**:
@@ -374,7 +375,7 @@ function buildCombinedFullAnalysisPrompt(
 **Documents Being Analyzed**:
 ${docList}
 
-**Vendors Involved**: ${vendorList}
+**Vendors Involved**: ${vendorList || 'Not Specified'}
 **Standard Structure**: ${standardStructure.name} v${standardStructure.version}
 
 **All Required Sections**:

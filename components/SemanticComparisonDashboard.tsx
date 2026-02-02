@@ -22,6 +22,7 @@ const SemanticComparisonDashboard: React.FC<SemanticComparisonDashboardProps> = 
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [beamlineId, setBeamlineId] = useState('BL01');
     const [vendor, setVendor] = useState('JASRI');
+    const [hasVendor, setHasVendor] = useState(true);
     const [isUploading, setIsUploading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -111,7 +112,7 @@ const SemanticComparisonDashboard: React.FC<SemanticComparisonDashboardProps> = 
             const formData = new FormData();
             formData.append('file', selectedFile);
             formData.append('beamlineId', beamlineId);
-            formData.append('vendor', vendor);
+            formData.append('vendor', hasVendor ? vendor : 'None');
 
             const res = await axios.post(`${API_BASE}/semantic-comparison/upload`, formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
@@ -416,11 +417,23 @@ const SemanticComparisonDashboard: React.FC<SemanticComparisonDashboardProps> = 
                         </select>
                     </div>
                     <div>
-                        <label className="block text-sm font-bold text-slate-700 mb-2">Vendor</label>
+                        <div className="flex items-center justify-between mb-2">
+                            <label className="block text-sm font-bold text-slate-700">Vendor</label>
+                            <label className="flex items-center gap-2 cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    checked={hasVendor}
+                                    onChange={(e) => setHasVendor(e.target.checked)}
+                                    className="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500"
+                                />
+                                <span className="text-xs font-medium text-slate-600">Has Vendor</span>
+                            </label>
+                        </div>
                         <select
                             value={vendor}
                             onChange={(e) => setVendor(e.target.value)}
-                            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                            disabled={!hasVendor}
+                            className={`w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white transition-opacity ${!hasVendor ? 'opacity-50 cursor-not-allowed' : ''}`}
                         >
                             <option value="JASRI">JASRI</option>
                             <option value="Nichigi">日技</option>
