@@ -1,13 +1,7 @@
-import { VertexAI } from '@google-cloud/vertexai';
 import { v4 as uuidv4 } from 'uuid';
 import { StandardSection, StandardStructure } from './StandardStructureService.js';
 import { SemanticChunk } from './SemanticChunkingService.js';
-
-// Initialize Vertex AI
-const vertexAI = new VertexAI({
-    project: process.env.GCP_PROJECT_ID || '',
-    location: process.env.GCP_LOCATION || 'us-central1',
-});
+import { VertexAIHelper } from '../utils/VertexAIHelper.js';
 
 export interface SectionMatch {
     sectionId: string;
@@ -39,7 +33,7 @@ export interface VendorProfile {
 
 export class SectionClassificationService {
     private static readonly CONFIDENCE_THRESHOLD_NEEDS_REVIEW = 70;
-    private static readonly MAX_RETRIES = 3;
+
 
     /**
      * Classify a chunk into standard structure sections
@@ -54,33 +48,8 @@ export class SectionClassificationService {
         // Build the classification prompt
         const prompt = this.buildClassificationPrompt(chunk, standardStructure, vendorProfile);
 
-        // Call Gemini API with retry logic
-        let response: string = '';
-        let lastError: Error | null = null;
-
-        for (let attempt = 0; attempt < this.MAX_RETRIES; attempt++) {
-            try {
-                const model = vertexAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
-                const result = await model.generateContent(prompt);
-                response = result.response.candidates?.[0]?.content?.parts?.[0]?.text || '';
-
-                if (response) {
-                    break; // Success
-                }
-            } catch (error) {
-                lastError = error as Error;
-                console.error(`⚠️  Classification attempt ${attempt + 1} failed:`, error);
-
-                if (attempt < this.MAX_RETRIES - 1) {
-                    const delay = Math.pow(2, attempt) * 1000;
-                    await new Promise(resolve => setTimeout(resolve, delay));
-                }
-            }
-        }
-
-        if (!response) {
-            throw lastError || new Error('Failed to classify chunk after all retries');
-        }
+        // Call Gemini API via Vertex AI Helper
+        const response = await VertexAIHelper.generateContentWithRetry(prompt);
 
         // Parse the response
         const matches = this.parseClassificationResponse(response, standardStructure);

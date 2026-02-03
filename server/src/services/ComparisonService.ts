@@ -1,13 +1,7 @@
-import { VertexAI } from '@google-cloud/vertexai';
 import { FirestoreService, type FileMetadata, type ComparisonResult } from './FirestoreService.js';
 import { VectorSearchService, type SimilarDocument } from './VectorSearchService.js';
 import { v4 as uuidv4 } from 'uuid';
-
-// Initialize Vertex AI with Google Cloud project
-const vertexAI = new VertexAI({
-    project: process.env.GCP_PROJECT_ID || '',
-    location: process.env.GCP_LOCATION || 'us-central1',
-});
+import { VertexAIHelper } from '../utils/VertexAIHelper.js';
 
 export class ComparisonService {
     /**
@@ -83,10 +77,8 @@ export class ComparisonService {
                 similarDocs
             );
 
-            // Call Gemini API via Vertex AI
-            const model = vertexAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
-            const result = await model.generateContent(prompt);
-            const response = result.response.candidates?.[0]?.content?.parts?.[0]?.text || '';
+            // Call Gemini API via Vertex AI Helper
+            const response = await VertexAIHelper.generateContentWithRetry(prompt);
 
             // Parse AI response
             const comparisonCase = this.determineCase(response, jasriFile, similarDocs);

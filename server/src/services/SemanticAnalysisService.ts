@@ -1,13 +1,7 @@
-import { VertexAI } from '@google-cloud/vertexai';
 import { FirestoreService } from './FirestoreService.js';
 import { VectorSearchService } from './VectorSearchService.js';
 import { StandardStructure, StandardSection } from './StandardStructureService.js';
-
-// Initialize Vertex AI
-const vertexAI = new VertexAI({
-    project: process.env.GCP_PROJECT_ID || '',
-    location: process.env.GCP_LOCATION || 'us-central1',
-});
+import { VertexAIHelper } from '../utils/VertexAIHelper.js';
 
 export interface AnalysisReport {
     documentId: string;
@@ -168,12 +162,8 @@ ${contextText}
 `;
 
         // 3. Call Gemini
-        const model = vertexAI.getGenerativeModel({
-            model: 'gemini-2.0-flash-exp',
-            generationConfig: { responseMimeType: "application/json" }
-        });
-        const result = await model.generateContent(prompt);
-        const responseText = result.response.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
+        // 3. Call Gemini
+        const responseText = await VertexAIHelper.generateContentWithRetry(prompt, 'gemini-2.0-flash-exp', { responseMimeType: "application/json" });
 
         try {
             const parsed = JSON.parse(responseText);
