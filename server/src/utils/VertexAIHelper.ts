@@ -3,8 +3,8 @@ import { VertexAI, GenerativeModel, GenerationConfig } from '@google-cloud/verte
 export class VertexAIHelper {
     private static vertexAI: VertexAI | null = null;
     private static readonly DEFAULT_MODEL = 'gemini-2.0-flash-exp';
-    private static readonly MAX_RETRIES = 3;
-    private static readonly BASE_DELAY_MS = 1000;
+    private static readonly MAX_RETRIES = 6;
+    private static readonly BASE_DELAY_MS = 2000;
 
     /**
      * Get or initialize the Vertex AI client

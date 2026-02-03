@@ -1,14 +1,8 @@
-import { VertexAI } from '@google-cloud/vertexai';
+import { VertexAIHelper } from '../utils/VertexAIHelper.js';
 import { v4 as uuidv4 } from 'uuid';
 import { SectionClassification } from './SectionClassificationService.js';
 import { SemanticChunk } from './SemanticChunkingService.js';
 import { StandardSection } from './StandardStructureService.js';
-
-// Initialize Vertex AI
-const vertexAI = new VertexAI({
-    project: process.env.GCP_PROJECT_ID || '',
-    location: process.env.GCP_LOCATION || 'us-central1',
-});
 
 export interface VendorProfile {
     id: string;
@@ -184,9 +178,7 @@ export class VendorComparisonService {
         const prompt = this.buildComparisonPrompt(sectionName, vendor1Text, vendor2Text, vendor1, vendor2);
 
         try {
-            const model = vertexAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
-            const result = await model.generateContent(prompt);
-            const response = result.response.candidates?.[0]?.content?.parts?.[0]?.text || '';
+            const response = await VertexAIHelper.generateContentWithRetry(prompt);
 
             // Parse the AI response
             const parsed = this.parseComparisonResponse(response);
