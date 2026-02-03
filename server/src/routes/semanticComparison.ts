@@ -1,7 +1,7 @@
 import express, { Request, Response } from 'express';
 import multer from 'multer';
 import { v4 as uuidv4 } from 'uuid';
-import { VertexAI } from '@google-cloud/vertexai';
+import { VertexAIHelper } from '../utils/VertexAIHelper.js';
 import { StandardStructureService } from '../services/StandardStructureService.js';
 import { VectorSearchService } from '../services/VectorSearchService.js';
 import { MissingElementsAnalyzer } from '../services/MissingElementsAnalyzer.js';
@@ -9,12 +9,6 @@ import { VendorComparisonService } from '../services/VendorComparisonService.js'
 import { FileProcessorService } from '../services/FileProcessorService.js';
 import { FirestoreService } from '../services/FirestoreService.js';
 import { CloudStorageService } from '../services/CloudStorageService.js';
-
-// Initialize Vertex AI for conversational analysis
-const vertexAI = new VertexAI({
-    project: process.env.GCP_PROJECT_ID || '',
-    location: process.env.GCP_LOCATION || 'us-central1',
-});
 
 const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage() });
@@ -246,16 +240,10 @@ router.post('/analyze-batch', async (req: Request, res: Response) => {
                     documentMetadata
                 );
 
-                const model = vertexAI.getGenerativeModel({
-                    model: 'gemini-2.0-flash-exp',
-                    generationConfig: {
-                        temperature: 0.2,
-                        maxOutputTokens: 8192,
-                    }
+                const aiResponse = await VertexAIHelper.generateContentWithRetry(analysisPrompt, 'gemini-2.0-flash-exp', {
+                    temperature: 0.2,
+                    maxOutputTokens: 8192,
                 });
-
-                const result = await model.generateContent(analysisPrompt);
-                const aiResponse = result.response.candidates?.[0]?.content?.parts?.[0]?.text || '';
 
                 // Get similar documents from vector store for context (general context)
                 const similarDocs = await VectorSearchService.searchSimilar(
@@ -752,9 +740,7 @@ ${context}
 **Answer**:`;
 
         // Call Gemini AI
-        const model = vertexAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
-        const result = await model.generateContent(qaPrompt);
-        const answer = result.response.candidates?.[0]?.content?.parts?.[0]?.text || 'Unable to generate answer';
+        const answer = await VertexAIHelper.generateContentWithRetry(qaPrompt);
 
         res.json({
             success: true,
